@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 
 const frame = document.querySelector("#scene-frame");
 const loading = document.querySelector("#scene-loading");
@@ -13,7 +14,7 @@ const waveButton = document.querySelector("#wave-button");
 const resetButton = document.querySelector("#reset-button");
 const cameraButton = document.querySelector("#camera-button");
 
-let renderer, controls, scene, camera, character, leftArm, rightArm, bodyGroup;
+let renderer, controls, scene, camera, character, leftArm, rightArm, bodyGroup, modelMixer;
 let motionEnabled = true;
 let waveUntil = 0;
 let frameId = 0;
@@ -111,7 +112,63 @@ function createEnvironment() {
 }
 
 /* Enhanced anime character: layered hair, expressive eyes and coordinated outfit. */
+/* Load the supplied rigged FBX model; retain the procedural character as a fallback. */
 function createCharacter() {
+  character = new THREE.Group();
+  character.position.set(0, 0, 0);
+  scene.add(character);
+
+  const loader = new FBXLoader();
+  loader.load(
+    "./VentusHigh.fbx",
+    (model) => {
+      model.name = "VentusHighAnimeCharacter";
+      model.traverse((object) => {
+        if (object.isMesh) {
+          object.castShadow = false;
+          object.receiveShadow = false;
+          if (object.material) {
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            for (const mat of materials) {
+              if (mat) {
+                mat.side = THREE.DoubleSide;
+                mat.needsUpdate = true;
+              }
+            }
+          }
+        }
+      });
+
+      let bounds = new THREE.Box3().setFromObject(model);
+      const size = bounds.getSize(new THREE.Vector3());
+      if (!Number.isFinite(size.y) || size.y <= 0) throw new Error("FBX model has invalid dimensions");
+      model.scale.setScalar(2.45 / size.y);
+      bounds = new THREE.Box3().setFromObject(model);
+      const center = bounds.getCenter(new THREE.Vector3());
+      model.position.x -= center.x;
+      model.position.y -= bounds.min.y;
+      model.position.z -= center.z;
+      character.add(model);
+
+      if (model.animations && model.animations.length) {
+        modelMixer = new THREE.AnimationMixer(model);
+        model.animations.forEach((clip) => modelMixer.clipAction(clip).play());
+      }
+      if (loading) {
+        loading.classList.add("done");
+        window.setTimeout(() => { loading.hidden = true; }, 450);
+      }
+    },
+    undefined,
+    (error) => {
+      console.error("Could not load VentusHigh.fbx; using the built-in character.", error);
+      createProceduralCharacter();
+      if (loading) loading.hidden = true;
+    }
+  );
+}
+
+function createProceduralCharacter() {
   character = new THREE.Group();
   character.position.set(0, 0, 0);
   scene.add(character);
@@ -355,7 +412,9 @@ function resetAll() {
 }
 function animate() {
   frameId = requestAnimationFrame(animate);
-  const elapsed = clock.getElapsedTime();
+  const delta = clock.getDelta();
+  const elapsed = clock.elapsedTime;
+  if (modelMixer) modelMixer.update(delta);
   if (character) {
     if (motionEnabled) {
       character.position.y = Math.sin(elapsed * 1.7) * 0.035;
