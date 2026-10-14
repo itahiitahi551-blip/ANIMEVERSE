@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101522">
+  <meta name="description" content="ANIMEVERSE — عالم أنمي ثلاثي الأبعاد تفاعلي يعمل على الهاتف.">
+  <title>ANIMEVERSE | عالمك ثلاثي الأبعاد</title>
+  <link rel="stylesheet" href="./src/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="ANIMEVERSE الصفحة الرئيسية">
+        <span class="brand-mark">A</span>
+        <span><strong>ANIMEVERSE</strong><small>YOUR ANIME WORLD</small></span>
+      </a>
+      <span class="live-indicator"><i></i> نسخة تجريبية</span>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">عالمك يبدأ من هنا</p>
+        <h1>ادخل إلى <span>عالم الأنمي</span></h1>
+        <p class="hero-description">استكشف المشهد، حرّك الشخصية، وابدأ ببناء عالمك الخاص.</p>
+      </div>
+      <div class="scene-frame" id="scene-frame">
+        <div id="scene-loading" class="scene-loading">
+          <span class="loader"></span>
+          <p>جارٍ تجهيز العالم...</p>
+        </div>
+        <div class="scene-badge"><span class="status-dot"></span> عالم ثلاثي الأبعاد</div>
+        <div class="scene-hint" id="scene-hint">اسحب لتدوير الكاميرا · قرّب بإصبعين</div>
+        <div id="scene-error" class="scene-error" hidden>
+          تعذّر تحميل العالم. تأكد من اتصال الإنترنت ثم أعد تحميل الصفحة.
+        </div>
+      </div>
+    </section>
+
+    <section class="control-panel" aria-label="لوحة التحكم">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">لوحة التحكم</p>
+          <h2>تحكّم في عالمك</h2>
+        </div>
+        <button class="button button-quiet" id="reset-button" type="button">إعادة ضبط</button>
+      </div>
+
+      <div class="controls-grid">
+        <div class="control-card">
+          <div class="control-label"><label for="camera-distance">مسافة الكاميرا</label><output id="camera-value">7.5</output></div>
+          <input id="camera-distance" type="range" min="4.5" max="12" step="0.1" value="7.5">
+        </div>
+        <div class="control-card">
+          <div class="control-label"><label for="character-rotation">دوران الشخصية</label><output id="rotation-value">0°</output></div>
+          <input id="character-rotation" type="range" min="-180" max="180" step="1" value="0">
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="button button-primary" id="motion-button" type="button" aria-pressed="true">
+          <span class="button-icon">✦</span><span>إيقاف الحركة</span>
+        </button>
+        <button class="button button-secondary" id="wave-button" type="button">
+          <span class="button-icon">↗</span><span>تحية الشخصية</span>
+        </button>
+        <button class="button button-secondary" id="camera-button" type="button">
+          <span class="button-icon">◎</span><span>إعادة الكاميرا</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="next-steps">
+      <div class="section-heading"><p class="eyebrow">خارطة التطوير</p><h2>هذه مجرد البداية</h2></div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-number">01</span><h3>شخصية متكاملة</h3><p>تطوير ملامح الوجه والملابس والشعر.</p><span class="feature-status">قيد التطوير</span></article>
+        <article class="feature-card"><span class="feature-number">02</span><h3>حركة ومفاصل</h3><p>تحريك الرأس والذراعين والساقين بشكل مستقل.</p><span class="feature-status">المرحلة التالية</span></article>
+        <article class="feature-card"><span class="feature-number">03</span><h3>عوالم للاستكشاف</h3><p>إضافة مناطق وشخصيات وتفاعلات جديدة.</p><span class="feature-status">ضمن الخطة</span></article>
+      </div>
+    </section>
+
+    <footer class="footer"><span>ANIMEVERSE</span><span>مصنوع ليُستكشف ✦</span></footer>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
