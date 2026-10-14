@@ -14,7 +14,7 @@ const waveButton = document.querySelector("#wave-button");
 const resetButton = document.querySelector("#reset-button");
 const cameraButton = document.querySelector("#camera-button");
 
-let renderer, controls, scene, camera, character, leftArm, rightArm, bodyGroup, modelMixer;
+let renderer, controls, scene, camera, character, leftArm, rightArm, bodyGroup, modelMixer, arcaneEffects;
 let motionEnabled = true;
 let waveUntil = 0;
 let frameId = 0;
@@ -132,6 +132,10 @@ function createCharacter() {
             for (const mat of materials) {
               if (mat) {
                 mat.side = THREE.DoubleSide;
+                if (mat.emissive) {
+                  mat.emissive.setHex(0x34206f);
+                  mat.emissiveIntensity = 0.16;
+                }
                 mat.needsUpdate = true;
               }
             }
@@ -149,6 +153,7 @@ function createCharacter() {
       model.position.y -= bounds.min.y;
       model.position.z -= center.z;
       character.add(model);
+      addArcaneEffects();
 
       if (model.animations && model.animations.length) {
         modelMixer = new THREE.AnimationMixer(model);
@@ -176,6 +181,48 @@ function createCharacter() {
       }
     }
   );
+}
+
+function addArcaneEffects() {
+  if (!character) return;
+  arcaneEffects = new THREE.Group();
+  arcaneEffects.name = "ArcaneAura";
+  character.add(arcaneEffects);
+
+  const violet = new THREE.MeshBasicMaterial({
+    color: 0x9b6cff, transparent: true, opacity: 0.72,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const cyan = new THREE.MeshBasicMaterial({
+    color: 0x65eaff, transparent: true, opacity: 0.62,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+
+  const lowerRune = new THREE.Mesh(new THREE.TorusGeometry(0.82, 0.018, 8, 96), violet);
+  lowerRune.rotation.x = Math.PI / 2;
+  lowerRune.position.y = 0.08;
+  arcaneEffects.add(lowerRune);
+
+  const upperRune = new THREE.Mesh(new THREE.TorusGeometry(0.64, 0.012, 8, 80), cyan);
+  upperRune.rotation.x = Math.PI / 2;
+  upperRune.position.y = 0.14;
+  arcaneEffects.add(upperRune);
+
+  const orbit = new THREE.Group();
+  orbit.name = "FloatingMagicOrbs";
+  arcaneEffects.add(orbit);
+  for (let i = 0; i < 22; i++) {
+    const angle = i * Math.PI * 2 / 22;
+    const radius = 0.72 + (i % 4) * 0.12;
+    const y = 0.25 + ((i * 37) % 220) / 100;
+    const orb = new THREE.Mesh(
+      new THREE.SphereGeometry(i % 5 === 0 ? 0.045 : 0.025, 8, 6),
+      i % 2 ? violet : cyan
+    );
+    orb.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+    orbit.add(orb);
+  }
+  arcaneEffects.userData.orbit = orbit;
 }
 
 function createProceduralCharacter() {
@@ -425,6 +472,13 @@ function animate() {
   const delta = clock.getDelta();
   const elapsed = clock.elapsedTime;
   if (modelMixer) modelMixer.update(delta);
+  if (arcaneEffects && motionEnabled) {
+    arcaneEffects.rotation.y += delta * 0.32;
+    const orbit = arcaneEffects.userData.orbit;
+    if (orbit) orbit.rotation.y -= delta * 0.7;
+    arcaneEffects.children[0].rotation.z = Math.sin(elapsed * 1.4) * 0.08;
+    arcaneEffects.children[1].rotation.z = -Math.sin(elapsed * 1.1) * 0.12;
+  }
   if (character) {
     if (motionEnabled) {
       character.position.y = Math.sin(elapsed * 1.7) * 0.035;
