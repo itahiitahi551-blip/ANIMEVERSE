@@ -155,8 +155,14 @@ function createCharacter() {
         model.animations.forEach((clip) => modelMixer.clipAction(clip).play());
       }
       if (loading) {
+        const message = loading.querySelector("p");
+        if (message) message.textContent = "تم تحميل الشخصية الجديدة بنجاح!";
         loading.classList.add("done");
-        window.setTimeout(() => { loading.hidden = true; }, 450);
+        window.setTimeout(() => { loading.hidden = true; }, 1400);
+      }
+      if (errorBox) {
+        errorBox.hidden = true;
+        errorBox.textContent = "";
       }
     },
     undefined,
@@ -164,6 +170,10 @@ function createCharacter() {
       console.error("Could not load VentusHigh.fbx; using the built-in character.", error);
       createProceduralCharacter();
       if (loading) loading.hidden = true;
+      if (errorBox) {
+        errorBox.hidden = false;
+        errorBox.textContent = "تعذّر تحميل الشخصية الجديدة (VentusHigh.fbx)، لذلك ظهرت الشخصية القديمة. السبب: " + (error?.message || "خطأ في قراءة الملف أو الوصول إليه");
+      }
     }
   );
 }
