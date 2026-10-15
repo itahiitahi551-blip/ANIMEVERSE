@@ -1,0 +1,3310 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>العالم المعرفي ثلاثي الأبعاد | الذكاء الاصطناعي في التعليم الجامعي</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Three.js r128 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts: Cairo & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-deep: #050814;
+      --bg-panel: rgba(10, 16, 34, 0.86);
+      --border-glow: rgba(56, 189, 248, 0.28);
+      --cyan-glow: #06b6d4;
+      --violet-glow: #8b5cf6;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-deep);
+      color: #f1f5f9;
+      font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
+      touch-action: none;
+    }
+
+    .selectable-text {
+      user-select: text;
+    }
+
+    .en-term {
+      font-family: 'Inter', sans-serif;
+      direction: ltr;
+      display: inline-block;
+    }
+
+    /* Glassmorphism panels */
+    .glass-panel {
+      background: rgba(10, 16, 35, 0.84);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-pill {
+      background: rgba(15, 23, 48, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(139, 92, 246, 0.28);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    }
+
+    /* 3D Node Projected Floating Labels & Image Cards */
+    #labels-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .node-floating-tag {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: center center;
+      pointer-events: auto;
+      cursor: grab;
+      touch-action: none;
+      transition: opacity 0.25s ease, filter 0.25s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      will-change: transform, opacity;
+    }
+
+    .node-floating-tag:active {
+      cursor: grabbing;
+    }
+
+    .node-floating-tag.dimmed {
+      opacity: 0.22 !important;
+      filter: grayscale(45%);
+    }
+
+    .node-floating-tag.highlighted {
+      z-index: 35 !important;
+      border-color: rgba(56, 189, 248, 0.85) !important;
+      box-shadow: 0 0 24px rgba(6, 182, 212, 0.45), 0 8px 25px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    .node-floating-tag.link-target-hover {
+      border-color: #ec4899 !important;
+      box-shadow: 0 0 28px rgba(236, 72, 153, 0.75) !important;
+      transform: translate(-50%, -50%) scale(1.08) !important;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.35);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.6);
+    }
+
+    /* Long press progress ring */
+    #longpress-ring {
+      position: fixed;
+      width: 68px;
+      height: 68px;
+      margin-left: -34px;
+      margin-top: -34px;
+      pointer-events: none;
+      z-index: 90;
+      display: none;
+    }
+
+    /* Reduced motion override */
+    body.reduced-motion *,
+    body.reduced-motion .node-floating-tag {
+      transition-duration: 0.05s !important;
+      animation-duration: 0.01s !important;
+    }
+  </style>
+</head>
+<body class="relative w-full h-full select-none overflow-hidden bg-[#050814]">
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="canvas-container" class="absolute inset-0 w-full h-full z-0" style="touch-action: none;"></div>
+
+  <!-- SVG Overlay for Active Link Dragging Beam -->
+  <svg id="link-drag-svg" class="absolute inset-0 w-full h-full pointer-events-none z-20 hidden">
+    <defs>
+      <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#06b6d4" />
+        <stop offset="50%" stop-color="#a855f7" />
+        <stop offset="100%" stop-color="#ec4899" />
+      </linearGradient>
+    </defs>
+    <line id="link-drag-line" x1="0" y1="0" x2="0" y2="0" stroke="url(#beamGrad)" stroke-width="3.5" stroke-dasharray="8 5" stroke-linecap="round" />
+    <circle id="link-drag-end" cx="0" cy="0" r="7" fill="#ec4899" />
+  </svg>
+
+  <!-- 2D Projected 3D Labels & Floating Scientific Image Cards Layer -->
+  <div id="labels-layer"></div>
+
+  <!-- Long-Press Visual Ring Indicator -->
+  <svg id="longpress-ring" viewBox="0 0 68 68">
+    <circle cx="34" cy="34" r="28" fill="rgba(6, 182, 212, 0.12)" stroke="rgba(255,255,255,0.18)" stroke-width="3"></circle>
+    <circle id="longpress-progress" cx="34" cy="34" r="28" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="176" transform="rotate(-90 34 34)"></circle>
+  </svg>
+
+  <!-- TOP NAVIGATION & RESEARCH HUD -->
+  <header class="fixed top-0 inset-x-0 z-40 p-2.5 md:p-3.5 pointer-events-none flex flex-col gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      
+      <!-- Brand & Research Title -->
+      <div class="glass-panel pointer-events-auto rounded-2xl px-3.5 py-2 flex items-center gap-3 max-w-full">
+        <button id="btn-focus-core" type="button" title="العودة إلى النواة المركزية (H)" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/30 to-violet-600/30 border border-cyan-400/40 flex items-center justify-center text-cyan-300 hover:scale-105 active:scale-95 transition shrink-0 shadow-lg shadow-cyan-950/50">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3" />
+            <path stroke-linecap="round" d="M12 2v3m0 14v3M2 12h3m14 0h3m-3.5-6.5l-2.1 2.1M7.6 16.4l-2.1 2.1m0-13l2.1 2.1m8.8 8.8l2.1 2.1" />
+          </svg>
+        </button>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm md:text-base font-bold text-white truncate">الذكاء الاصطناعي في التعليم الجامعي</h1>
+            <span id="save-status-badge" class="hidden sm:inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              محفوظ محليًا
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-300 truncate">الفضاء المعرفي التفاعلي ثلاثي الأبعاد • <span id="hud-stats-count" class="text-cyan-300 font-semibold">34 عقدة</span></p>
+        </div>
+      </div>
+
+      <!-- Search & Filter Bar -->
+      <div class="glass-panel pointer-events-auto rounded-2xl p-1.5 flex items-center gap-1.5 flex-1 min-w-[230px] max-w-md relative">
+        <div class="relative flex-1">
+          <input id="search-input" type="text" placeholder="ابحث عن مفهوم، فصل، صورة علمية، أو مرجع... (/)" class="w-full bg-slate-900/75 text-xs md:text-sm text-white placeholder-slate-400 rounded-xl pr-9 pl-7 py-2 border border-slate-700/70 focus:outline-none focus:border-cyan-400 transition" />
+          <svg class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" /><path stroke-linecap="round" d="m21 21-4.3-4.3" />
+          </svg>
+          <button id="btn-clear-search" type="button" title="مسح البحث" class="hidden absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1">✕</button>
+        </div>
+        <select id="filter-category" aria-label="تصفية حسب نوع العقدة" class="bg-slate-900/90 text-xs text-slate-200 rounded-xl px-2.5 py-2 border border-slate-700/70 focus:outline-none focus:border-cyan-400 cursor-pointer">
+          <option value="all">كل العناصر</option>
+          <option value="section">الفصول (8)</option>
+          <option value="concept">المفاهيم</option>
+          <option value="explanation">التفسيرات</option>
+          <option value="image">الصور العلمية</option>
+          <option value="evidence">الأدلة والبيانات</option>
+          <option value="reference">المراجع الموثقة</option>
+        </select>
+
+        <!-- Search Results Dropdown -->
+        <div id="search-dropdown" class="hidden absolute top-full right-0 left-0 mt-2 glass-panel rounded-2xl max-h-72 overflow-y-auto z-50 p-2 divide-y divide-slate-800/80 shadow-2xl"></div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="glass-panel pointer-events-auto rounded-2xl p-1.5 flex items-center gap-1 flex-wrap">
+        <button id="btn-back-level" type="button" disabled title="العودة إلى المستوى والموقع السابق (Backspace)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-slate-800/80 text-slate-200 hover:bg-cyan-500/20 hover:text-cyan-200 disabled:opacity-40 disabled:pointer-events-none transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg>
+          <span class="hidden sm:inline">مستوى سابق</span>
+        </button>
+
+        <button id="btn-guided-chain" type="button" title="استكشاف متسلسل: صورة علمية ← مفهوم ← تفسير ← دليل" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-gradient-to-r from-cyan-500/25 to-violet-500/25 border border-cyan-400/40 text-cyan-200 hover:from-cyan-500/40 hover:to-violet-500/40 transition">
+          <span>🧭</span>
+          <span class="hidden md:inline">مسار: صورة ← مفهوم ← تفسير ← دليل</span>
+          <span class="md:hidden">مسار علمي</span>
+        </button>
+
+        <button id="btn-toggle-link-mode" type="button" title="وضع سحب رابط معرفي بين مفهومين (L)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-slate-800/80 text-slate-200 hover:bg-fuchsia-500/25 hover:text-fuchsia-200 border border-transparent transition">
+          <span>🔗</span>
+          <span class="hidden sm:inline">ربط مفاهيم</span>
+        </button>
+
+        <button id="btn-add-node-top" type="button" title="إضافة عقدة معرفية جديدة (N)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1 bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/35 transition">
+          <span>＋</span>
+          <span class="hidden sm:inline">عقدة جديدة</span>
+        </button>
+
+        <button id="btn-auto-layout" type="button" title="إعادة ترتيب الخريطة المعرفية تلقائيًا (R)" class="p-2 rounded-xl text-xs bg-slate-800/80 text-slate-200 hover:bg-cyan-500/20 hover:text-cyan-200 transition" aria-label="إعادة ترتيب الخريطة تلقائيا">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h14" /></svg>
+        </button>
+
+        <button id="btn-reduced-motion" type="button" title="تقليل الحركة والمؤثرات للأجهزة والراحة البصرية (M)" class="p-2 rounded-xl text-xs bg-slate-800/80 text-slate-200 hover:bg-violet-500/20 hover:text-violet-200 transition" aria-label="تقليل الحركة">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        </button>
+
+        <button id="btn-reset-scene" type="button" title="إعادة المشهد إلى وضعه الأصلي" class="p-2 rounded-xl text-xs bg-slate-800/80 text-rose-300 hover:bg-rose-500/20 transition" aria-label="إعادة المشهد لوضعه الأصلي">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        </button>
+
+        <button id="btn-help-modal" type="button" title="تلميحات الاستخدام واختصارات لوحة المفاتيح (?)" class="w-8 h-8 rounded-xl text-xs font-bold bg-slate-800/90 text-cyan-300 hover:bg-cyan-500/25 border border-cyan-500/30 transition">
+          ؟
+        </button>
+      </div>
+    </div>
+
+    <!-- Breadcrumb & Active Mode Strip -->
+    <div class="flex items-center justify-between gap-2 pointer-events-none">
+      <div id="breadcrumb-bar" class="glass-pill pointer-events-auto rounded-xl px-3 py-1.5 text-xs flex items-center gap-1.5 overflow-x-auto max-w-full">
+        <!-- Populated dynamically -->
+      </div>
+
+      <!-- Active Link Mode Banner -->
+      <div id="link-mode-banner" class="hidden glass-pill pointer-events-auto rounded-xl px-3 py-1.5 text-xs bg-fuchsia-950/90 border-fuchsia-400/60 text-fuchsia-200 flex items-center gap-2 animate-pulse">
+        <span>🔗 وضع الربط نشط: اسحب من أي عقدة إلى عقدة أخرى أو انقر عقدتين متتاليتين لربطهما</span>
+        <button id="btn-cancel-link-mode" type="button" class="px-2 py-0.5 rounded bg-fuchsia-500/30 hover:bg-fuchsia-500/50 text-white font-semibold">إلغاء</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- SCIENTIFIC PATHWAY STEPPER BAR (Image -> Concept -> Explanation -> Evidence) -->
+  <div id="pathway-bar" class="hidden fixed top-28 right-4 left-4 md:left-auto md:right-5 z-30 max-w-xl glass-panel rounded-2xl p-3 border border-cyan-400/40 shadow-2xl">
+    <div class="flex items-center justify-between gap-2 mb-2">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">مسار الترابط المعرفي المتسلسل</span>
+        <span id="pathway-chain-title" class="text-xs text-slate-300 font-semibold truncate"></span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button id="btn-switch-chain" type="button" class="text-[11px] px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 transition">تبديل المثال ↻</button>
+        <button id="btn-close-pathway" type="button" class="text-slate-400 hover:text-white px-1.5 text-sm">✕</button>
+      </div>
+    </div>
+    <div id="pathway-steps-container" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+      <!-- Populated dynamically with the 4 chain stages -->
+    </div>
+  </div>
+
+  <!-- SIDE / FLOATING KNOWLEDGE INSPECTOR PANEL -->
+  <aside id="inspector-panel" class="fixed bottom-0 right-0 left-0 md:top-28 md:bottom-4 md:right-4 md:left-auto md:w-[410px] z-30 glass-panel rounded-t-3xl md:rounded-3xl flex flex-col max-h-[62vh] md:max-h-[calc(100vh-8.5rem)] transition-transform duration-300">
+    <!-- Mobile Drag Handle / Collapse Toggle -->
+    <div class="flex items-center justify-between px-4 pt-3 pb-2 border-b border-slate-800/80 shrink-0">
+      <div class="flex items-center gap-2 min-w-0">
+        <span id="panel-node-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">النواة المركزية</span>
+        <span id="panel-provenance-badge" class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-400/30 truncate">إطار مفاهيمي</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button id="btn-collapse-panel" type="button" title="طي/توسيع لوحة التفاصيل" class="p-1.5 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white text-xs">
+          <span id="panel-collapse-icon">▼</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scrollable Inspector Body -->
+    <div id="inspector-body" class="p-4 overflow-y-auto space-y-4 selectable-text flex-1">
+      <div>
+        <h2 id="panel-title-ar" class="text-lg font-extrabold text-white leading-snug">الذكاء الاصطناعي في التعليم الجامعي</h2>
+        <p id="panel-title-en" class="text-xs text-cyan-300/90 en-term mt-0.5 font-medium">Artificial Intelligence in Higher Education</p>
+      </div>
+
+      <!-- Provenance Notice Banner -->
+      <div id="panel-provenance-box" class="rounded-xl p-2.5 bg-slate-900/90 border border-slate-700/80 text-xs text-slate-300 flex items-start gap-2">
+        <span id="panel-provenance-icon" class="text-base leading-none mt-0.5">🛡️</span>
+        <div id="panel-provenance-desc" class="leading-relaxed"></div>
+      </div>
+
+      <!-- Scientific Visual Card Preview (Shown when node has an image/diagram or linked image) -->
+      <div id="panel-image-card" class="hidden rounded-2xl overflow-hidden border border-cyan-500/40 bg-slate-950/90 shadow-lg">
+        <div class="relative group cursor-pointer" id="btn-open-lightbox-from-panel">
+          <img id="panel-image-preview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="رسم علمي" class="w-full h-44 object-contain bg-slate-950 p-2 max-w-full" />
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent flex items-end justify-between p-3">
+            <span class="text-xs font-bold text-cyan-200 flex items-center gap-1.5 bg-slate-900/85 px-2.5 py-1 rounded-xl border border-cyan-400/30">
+              🔍 تكبير البطاقة العلمية وشرحها
+            </span>
+          </div>
+        </div>
+        <div id="panel-image-caption" class="px-3 py-2 text-[11px] text-slate-300 border-t border-slate-800/80 bg-slate-900/60"></div>
+      </div>
+
+      <!-- Node Summary & Full Explanation -->
+      <div class="space-y-2">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400">الملخص والتفسير العلمي</h3>
+        <p id="panel-summary" class="text-xs md:text-sm text-slate-200 leading-relaxed font-medium"></p>
+        <div id="panel-details" class="text-xs text-slate-300 leading-relaxed space-y-1.5 bg-slate-900/50 p-3 rounded-xl border border-slate-800/80"></div>
+      </div>
+
+      <!-- Quantitative Metrics / Empirical Data Table (if present) -->
+      <div id="panel-metrics-section" class="hidden space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-emerald-400">📊 مؤشرات البيانات التجريبية (نموذج محاكاة)</h3>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">بيانات تجريبية غير ميدانية</span>
+        </div>
+        <div id="panel-metrics-grid" class="grid grid-cols-2 gap-2"></div>
+      </div>
+
+      <!-- Linked Knowledge Chain Box (Image -> Concept -> Explanation -> Evidence) -->
+      <div id="panel-chain-section" class="hidden space-y-2 pt-1">
+        <h3 class="text-xs font-bold text-violet-300 flex items-center gap-1.5">
+          <span>⛓️</span>
+          <span>السلسلة المعرفية المترابطة (انتقل بضغطة واحدة):</span>
+        </h3>
+        <div id="panel-chain-buttons" class="grid grid-cols-2 gap-1.5"></div>
+      </div>
+
+      <!-- Connected Nodes (Children & Semantic Links) -->
+      <div class="space-y-2 pt-1">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-slate-300">العقد والروابط المتصلة (<span id="panel-connections-count">0</span>)</h3>
+          <button id="btn-panel-toggle-branches" type="button" class="text-xs font-semibold text-cyan-300 hover:text-cyan-200 bg-cyan-500/15 px-2.5 py-1 rounded-lg border border-cyan-500/30 transition">
+            فتح/طي الفروع
+          </button>
+        </div>
+        <div id="panel-connections-list" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <!-- Node CRUD & Link Controls -->
+      <div class="pt-3 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+        <button id="btn-panel-edit" type="button" class="px-2.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-100 flex items-center justify-center gap-1 transition">
+          ✏️ تعديل
+        </button>
+        <button id="btn-panel-add-child" type="button" class="px-2.5 py-2 rounded-xl text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/30 flex items-center justify-center gap-1 transition">
+          🌱 إضافة فرع
+        </button>
+        <button id="btn-panel-start-link" type="button" class="px-2.5 py-2 rounded-xl text-xs font-semibold bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-200 border border-fuchsia-500/30 flex items-center justify-center gap-1 transition">
+          🔗 ربط بمفهوم
+        </button>
+        <button id="btn-panel-delete" type="button" class="px-2.5 py-2 rounded-xl text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/30 flex items-center justify-center gap-1 transition">
+          🗑️ حذف
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- BOTTOM-LEFT FLOATING 3D CAMERA & TOUCH CONTROLS -->
+  <div class="fixed bottom-4 left-4 z-30 flex flex-col gap-2 pointer-events-none hidden sm:flex">
+    <div class="glass-panel pointer-events-auto rounded-2xl p-1.5 flex flex-col gap-1 items-center">
+      <button id="btn-zoom-in" type="button" title="تكبير المشهد (+)" class="w-9 h-9 rounded-xl bg-slate-800/90 hover:bg-cyan-500/25 text-white font-bold text-base flex items-center justify-center transition">＋</button>
+      <button id="btn-zoom-out" type="button" title="تصغير المشهد (-)" class="w-9 h-9 rounded-xl bg-slate-800/90 hover:bg-cyan-500/25 text-white font-bold text-base flex items-center justify-center transition">－</button>
+      <button id="btn-toggle-pan-mode" type="button" title="تبديل نمط سحب الفضاء: دوران ثلاثي الأبعاد / تحريك أفقي" class="w-9 h-9 rounded-xl bg-slate-800/90 hover:bg-violet-500/25 text-cyan-300 text-xs font-bold flex items-center justify-center transition">
+        <span id="pan-mode-icon">🔄</span>
+      </button>
+      <button id="btn-expand-all" type="button" title="فتح جميع الفروع أو طيها" class="w-9 h-9 rounded-xl bg-slate-800/90 hover:bg-emerald-500/25 text-emerald-300 text-xs font-bold flex items-center justify-center transition">
+        🌿
+      </button>
+    </div>
+
+    <!-- Legend Chip -->
+    <div class="glass-pill pointer-events-auto rounded-2xl px-3 py-2 text-[11px] flex flex-wrap items-center gap-2.5 text-slate-300">
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span> فصل رئيسي</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block"></span> مفهوم</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> تفسير</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-pink-400 inline-block"></span> صورة علمية</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> دليل/بيانات</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> مرجع موثق</span>
+    </div>
+  </div>
+
+  <!-- FLOATING CONTEXT MENU (Opened on Long-Press or Right-Click on any Node) -->
+  <div id="context-menu" class="hidden fixed z-50 glass-panel rounded-2xl p-2 w-56 border border-cyan-400/50 shadow-2xl space-y-1">
+    <div class="px-2.5 py-1.5 border-b border-slate-800 flex items-center justify-between">
+      <span id="ctx-node-title" class="text-xs font-bold text-cyan-300 truncate">خيارات العقدة</span>
+      <button id="btn-ctx-close" type="button" class="text-slate-400 hover:text-white text-xs">✕</button>
+    </div>
+    <button id="btn-ctx-toggle-branch" type="button" class="w-full text-right px-3 py-2 rounded-xl text-xs hover:bg-cyan-500/20 text-slate-100 flex items-center gap-2 transition">
+      <span>🌿</span> <span>فتح / إغلاق الفروع المرتبطة</span>
+    </button>
+    <button id="btn-ctx-start-link" type="button" class="w-full text-right px-3 py-2 rounded-xl text-xs hover:bg-fuchsia-500/20 text-slate-100 flex items-center gap-2 transition">
+      <span>🔗</span> <span>سحب رابط معرفي من هنا</span>
+    </button>
+    <button id="btn-ctx-add-child" type="button" class="w-full text-right px-3 py-2 rounded-xl text-xs hover:bg-emerald-500/20 text-slate-100 flex items-center gap-2 transition">
+      <span>＋</span> <span>توسيع بفرع جديد</span>
+    </button>
+    <button id="btn-ctx-lightbox" type="button" class="w-full text-right px-3 py-2 rounded-xl text-xs hover:bg-sky-500/20 text-slate-100 flex items-center gap-2 transition">
+      <span>🔍</span> <span>عرض مكبر / المسار المتسلسل</span>
+    </button>
+    <button id="btn-ctx-edit" type="button" class="w-full text-right px-3 py-2 rounded-xl text-xs hover:bg-violet-500/20 text-slate-100 flex items-center gap-2 transition">
+      <span>✏️</span> <span>تحرير النصوص والبيانات</span>
+    </button>
+    <button id="btn-ctx-delete" type="button" class="w-full text-right px-3 py-2 rounded-xl text-xs hover:bg-rose-500/20 text-rose-300 flex items-center gap-2 transition">
+      <span>🗑️</span> <span>حذف العقدة</span>
+    </button>
+  </div>
+
+  <!-- SCIENTIFIC IMAGE LIGHTBOX & PATHWAY MODAL -->
+  <div id="lightbox-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-3 md:p-6">
+    <div class="glass-panel rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-cyan-400/40 shadow-2xl">
+      <!-- Lightbox Header -->
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-400/30">بطاقة صورة علمية تفاعلية</span>
+            <span id="lightbox-provenance" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30"></span>
+          </div>
+          <h3 id="lightbox-title" class="text-base md:text-lg font-extrabold text-white mt-1 truncate"></h3>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-lightbox-zoom-in" type="button" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-white font-bold">تكبير ＋</button>
+          <button id="btn-lightbox-zoom-out" type="button" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-white font-bold">تصغير －</button>
+          <button id="btn-lightbox-close" type="button" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-rose-500/30 text-slate-200 hover:text-white font-bold">✕</button>
+        </div>
+      </div>
+
+      <!-- Lightbox Interactive Diagram Viewport -->
+      <div class="relative flex-1 bg-[#040711] overflow-auto flex items-center justify-center p-4 min-h-[260px]">
+        <img id="lightbox-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="رسم علمي مكبر" class="max-w-full max-h-[46vh] object-contain transition-transform duration-200 origin-center" />
+      </div>
+
+      <!-- Lightbox Explanation, Source & Next Step in Chain -->
+      <div class="p-4 md:p-5 bg-slate-900/90 border-t border-slate-800 space-y-3 overflow-y-auto max-h-[36vh]">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="md:col-span-2 space-y-1">
+            <h4 class="text-xs font-bold text-cyan-400">الشرح العلمي للبطاقة البصرية:</h4>
+            <p id="lightbox-explanation" class="text-xs md:text-sm text-slate-200 leading-relaxed"></p>
+          </div>
+          <div class="bg-slate-950/80 rounded-2xl p-3 border border-slate-800 space-y-1">
+            <h4 class="text-xs font-bold text-amber-300">المصدر وطبيعة البيانات:</h4>
+            <p id="lightbox-source" class="text-xs text-slate-300 leading-relaxed"></p>
+          </div>
+        </div>
+
+        <!-- Direct Navigation from Image -> Concept -> Explanation -> Evidence -->
+        <div class="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs font-bold text-violet-300">انتقل مباشرة من هذه الصورة العلمية عبر المسار المعرفي:</span>
+          <div id="lightbox-chain-links" class="flex flex-wrap items-center gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT NODE MODAL -->
+  <div id="node-editor-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel rounded-3xl max-w-lg w-full p-5 border border-cyan-400/40 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 id="editor-modal-title" class="text-base font-extrabold text-white">تعديل العقدة المعرفية</h3>
+        <button id="btn-editor-close" type="button" class="text-slate-400 hover:text-white text-sm px-2">✕</button>
+      </div>
+
+      <form id="node-editor-form" class="space-y-3">
+        <input type="hidden" id="edit-node-id" />
+        <input type="hidden" id="edit-parent-id" />
+
+        <div>
+          <label for="edit-title-ar" class="block text-xs font-bold text-slate-300 mb-1">العنوان بالعربية *</label>
+          <input id="edit-title-ar" type="text" required class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400" placeholder="مثال: التعلم التكيفي الذكي" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="edit-title-en" class="block text-xs font-bold text-slate-300 mb-1">المصطلح بالإنجليزية (En Term)</label>
+            <input id="edit-title-en" type="text" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white en-term focus:outline-none focus:border-cyan-400" placeholder="Adaptive Learning" />
+          </div>
+          <div>
+            <label for="edit-node-type" class="block text-xs font-bold text-slate-300 mb-1">نوع العقدة المعرفية</label>
+            <select id="edit-node-type" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400">
+              <option value="concept">مفهوم علمي (Concept)</option>
+              <option value="explanation">تفسير وآلية (Explanation)</option>
+              <option value="evidence">دليل وبيانات (Evidence/Data)</option>
+              <option value="image">بطاقة صورة علمية (Scientific Image)</option>
+              <option value="reference">مرجع علمي (Reference)</option>
+              <option value="section">قسم رئيسي (Section)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="edit-node-provenance" class="block text-xs font-bold text-slate-300 mb-1">تصنيف الموثوقية وطبيعة البيانات (لمنع الخلط مع النتائج الميدانية)</label>
+          <select id="edit-node-provenance" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
+            <option value="إطار مفاهيمي ومنهجي">إطار مفاهيمي ومنهجي (Conceptual Framework)</option>
+            <option value="مثال توضيحي تعليمي">مثال توضيحي تعليمي (Illustrative Example)</option>
+            <option value="بيانات تجريبية (محاكاة بحثية)">بيانات تجريبية - محاكاة بحثية (Simulated Experimental Data)</option>
+            <option value="مرجع علمي موثق (حقيقي)">مرجع علمي موثق وحقيقي (Verified Academic Reference)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="edit-node-summary" class="block text-xs font-bold text-slate-300 mb-1">الملخص المعرفي *</label>
+          <textarea id="edit-node-summary" rows="2" required class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400" placeholder="وصف موجز ومركز للمفهوم أو الدليل..."></textarea>
+        </div>
+
+        <div>
+          <label for="edit-node-details" class="block text-xs font-bold text-slate-300 mb-1">التفاصيل والتفسير والأدلة المرتبطة</label>
+          <textarea id="edit-node-details" rows="3" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400" placeholder="شرح تفصيلي، معادلات، أو ملاحظات منهجية..."></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+          <button id="btn-editor-cancel" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">إلغاء</button>
+          <button id="btn-editor-save" type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-violet-600 text-white hover:opacity-95 shadow-lg shadow-cyan-950/50">حفظ في الفضاء المعرفي</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LINK RELATIONSHIP CREATION MODAL -->
+  <div id="link-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel rounded-3xl max-w-md w-full p-5 border border-fuchsia-400/40 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <span>🔗</span> <span>إنشاء علاقة معرفية جديدة</span>
+        </h3>
+        <button id="btn-link-modal-close" type="button" class="text-slate-400 hover:text-white text-sm px-2">✕</button>
+      </div>
+
+      <div class="text-xs text-slate-300 space-y-2 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-slate-400">من العقدة:</span>
+          <span id="link-source-name" class="font-bold text-cyan-300"></span>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-slate-400">إلى العقدة:</span>
+          <span id="link-target-name" class="font-bold text-fuchsia-300"></span>
+        </div>
+      </div>
+
+      <div>
+        <label for="link-relation-label" class="block text-xs font-bold text-slate-300 mb-1.5">طبيعة العلاقة المعرفية:</label>
+        <select id="link-relation-label" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-fuchsia-400">
+          <option value="يفسّر علميًا">يفسّر علميًا (Explains)</option>
+          <option value="يدعم بالدليل التجريبي">يدعم بالدليل التجريبي (Supported by Evidence)</option>
+          <option value="يمثّل بصريًا">يمثّل بصريًا (Visually Represents)</option>
+          <option value="يرتبط مفهوميًا">يرتبط مفهوميًا (Conceptually Related)</option>
+          <option value="يقيّد أو يتحفظ على">يقيّد أو يتحفظ على (Qualifies / Limits)</option>
+          <option value="يطبّق في توصية">يطبّق في توصية (Applied in Recommendation)</option>
+        </select>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button id="btn-link-modal-cancel" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">إلغاء</button>
+        <button id="btn-link-modal-confirm" type="button" class="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-fuchsia-500 to-violet-600 text-white hover:opacity-95">تأكيد الربط الضوئي</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESET CONFIRMATION MODAL (No native confirm/alert!) -->
+  <div id="reset-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel rounded-3xl max-w-md w-full p-5 border border-rose-400/40 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-extrabold text-white">إعادة ضبط المشهد المعرفي</h3>
+        <button id="btn-reset-modal-close" type="button" class="text-slate-400 hover:text-white text-sm px-2">✕</button>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">اختر مستوى إعادة الضبط المطلوب للعالم المعرفي ثلاثي الأبعاد:</p>
+      <div class="space-y-2">
+        <button id="btn-reset-camera-only" type="button" class="w-full text-right p-3 rounded-2xl bg-slate-900 hover:bg-cyan-500/15 border border-cyan-500/30 transition">
+          <div class="text-xs font-bold text-cyan-300">1. إعادة ضبط موقع الكاميرا والمنظور فقط</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">يعيد الكاميرا إلى النواة المركزية مع الاحتفاظ بكل تعديلاتك ومواضع العقد.</div>
+        </button>
+        <button id="btn-reset-full-data" type="button" class="w-full text-right p-3 rounded-2xl bg-slate-900 hover:bg-rose-500/15 border border-rose-500/30 transition">
+          <div class="text-xs font-bold text-rose-300">2. استعادة العالم الأصلي بالكامل (مسح التعديلات المحفوظة)</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">يعيد جميع الفصول والمفاهيم والروابط ومواقع العقد إلى حالتها الافتراضية الأولية.</div>
+        </button>
+      </div>
+      <div class="flex justify-end pt-1">
+        <button id="btn-reset-modal-cancel" type="button" class="px-4 py-1.5 rounded-xl text-xs bg-slate-800 text-slate-300 hover:bg-slate-700">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONBOARDING & KEYBOARD SHORTCUTS HELP MODAL -->
+  <div id="help-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel rounded-3xl max-w-2xl w-full p-5 md:p-6 border border-cyan-400/40 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base md:text-lg font-extrabold text-white">دليل استكشاف العالم المعرفي ثلاثي الأبعاد</h3>
+          <p class="text-xs text-cyan-300 mt-0.5">تحكّم كامل باللمس على الهاتف أو بالماوس ولوحة المفاتيح على الكمبيوتر</p>
+        </div>
+        <button id="btn-help-close" type="button" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white">✕</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <div class="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+          <h4 class="font-bold text-cyan-300 flex items-center gap-1.5">📱 التحكم باللمس والماوس</h4>
+          <ul class="space-y-1.5 text-slate-300 leading-relaxed">
+            <li>• <b>سحب أي عقدة:</b> اسحب العقدة أو بطاقتها بإصبعك أو بالماوس لتحريكها في الفضاء ثلاثي الأبعاد دون دوران الشاشة.</li>
+            <li>• <b>تحريك الفضاء والتكبير:</b> اسحب الفراغ للدوران حول المعرفة، واستخدم إصبعين (Pinch) أو عجلة الماوس للتكبير والتصغير.</li>
+            <li>• <b>الضغط المطوّل (Long Press):</b> اضغط مطولًا (0.5 ثانية) أو بزر الماوس الأيمن على أي عقدة لإظهار قائمة الخيارات السريعة.</li>
+            <li>• <b>سحب رابط معرفي:</b> فعّل «🔗 ربط مفاهيم» أو اسحب من مقبض الربط على البطاقة إلى عقدة أخرى لإنشاء علاقة ضوئية جديدة.</li>
+          </ul>
+        </div>
+
+        <div class="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+          <h4 class="font-bold text-violet-300 flex items-center gap-1.5">⌨️ اختصارات لوحة المفاتيح</h4>
+          <div class="grid grid-cols-2 gap-1.5 text-slate-300">
+            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>بحث فوري</span><kbd class="text-cyan-300 font-mono">/</kbd></div>
+            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>مستوى سابق</span><kbd class="text-cyan-300 font-mono">Backspace</kbd></div>
+            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>فتح/طي فرع</span><kbd class="text-cyan-300 font-mono">Space</kbd></div>
+            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>عقدة جديدة</span><kbd class="text-cyan-300 font-mono">N</kbd></div>
+            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>وضع الربط</span><kbd class="text-cyan-300 font-mono">L</kbd></div>
+            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>ترتيب تلقائي</span><kbd class="text-cyan-300 font-mono">R</kbd></div>
+            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>النواة المركزية</span><kbd class="text-cyan-300 font-mono">H</kbd></div>
+            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>تقليل الحركة</span><kbd class="text-cyan-300 font-mono">M</kbd></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-amber-500/30 text-xs text-slate-200 space-y-1">
+        <div class="font-bold text-amber-300">🔬 الأمانة العلمية وتمييز البيانات داخل التطبيق:</div>
+        <p class="leading-relaxed text-slate-300">يميز هذا العالم المعرفي بدقة بين <b>المراجع الأكاديمية الحقيقية الموثقة</b> (مثل UNESCO 2023 وBloom 1984 وKasneci et al. 2023)، وبين <b>الأطر المفاهيمية</b>، وبين <b>البيانات التجريبية المحاكاة (Simulated Sandbox Data)</b> المخصصة لتجربة أدوات التحليل البصري دون اختلاق نتائج ميدانية.</p>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+        <span class="text-[11px] text-slate-400">يتم حفظ جميع تعديلاتك ومواضع العقد محليًا في متصفحك تلقائيًا.</span>
+        <button id="btn-help-start" type="button" class="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-violet-600 text-white">ابدأ الاستكشاف الآن</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONBOARDING QUICK TOAST / HINT FOR NEW USER -->
+  <div id="onboarding-hint" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 glass-pill rounded-2xl px-4 py-2.5 text-xs text-slate-100 flex items-center gap-3 shadow-2xl max-w-[92vw] sm:max-w-lg border border-cyan-400/40">
+    <span class="text-base">✨</span>
+    <span class="leading-relaxed">مرحباً بك! اسحب أي عقدة لتحريكها، أو انقر على أي فصل لتوسيع فروعه، أو اضغط مطولاً لخيارات الربط والتحرير.</span>
+    <button id="btn-dismiss-hint" type="button" class="px-2.5 py-1 rounded-lg bg-cyan-500/25 hover:bg-cyan-500/40 text-cyan-200 font-bold shrink-0">فهمت</button>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast-box" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden glass-pill rounded-2xl px-4 py-2 text-xs font-semibold text-cyan-200 border border-cyan-400/50 shadow-xl"></div>
+
+  <!-- MAIN APPLICATION LOGIC -->
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. SCIENTIFIC SVG DIAGRAMS GENERATOR (High-Detail Crisp Data URIs)
+      // =========================================================================
+      function createSvgDataUri(svgString) {
+        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svgString.trim());
+      }
+
+      const SCIENTIFIC_SVGS = {
+        adaptiveArchitecture: createSvgDataUri(`
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+            <defs>
+              <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#060b19"/>
+                <stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+              <linearGradient id="cyanG" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#06b6d4"/>
+                <stop offset="100%" stop-color="#3b82f6"/>
+              </linearGradient>
+              <linearGradient id="violetG" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#8b5cf6"/>
+                <stop offset="100%" stop-color="#ec4899"/>
+              </linearGradient>
+            </defs>
+            <rect width="800" height="450" rx="20" fill="url(#bg1)" stroke="#1e293b" stroke-width="2"/>
+            <text x="400" y="42" fill="#f8fafc" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle">معمارية التعلم التكيفي الذكي وتتبع المعرفة (Adaptive AI Tutoring Loop)</text>
+            <text x="400" y="68" fill="#38bdf8" font-family="sans-serif" font-size="13" text-anchor="middle">[نموذج توضيحي تعليمي - يربط نموذج المتعلم بمحرك التوجيه السقراطي]</text>
+
+            <rect x="50" y="120" width="190" height="125" rx="16" fill="#0f172a" stroke="#06b6d4" stroke-width="2.5"/>
+            <text x="145" y="155" fill="#22d3ee" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">1. نموذج المتعلم</text>
+            <text x="145" y="178" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="middle">Student Knowledge Profile</text>
+            <text x="145" y="205" fill="#e2e8f0" font-family="sans-serif" font-size="12" text-anchor="middle">• مستوى الإتقان الحالي</text>
+            <text x="145" y="225" fill="#e2e8f0" font-family="sans-serif" font-size="12" text-anchor="middle">• أنماط الأخطاء المفاهيمية</text>
+
+            <rect x="305" y="120" width="190" height="125" rx="16" fill="#0f172a" stroke="#8b5cf6" stroke-width="2.5"/>
+            <text x="400" y="155" fill="#c084fc" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">2. تتبع المعرفة العصبي</text>
+            <text x="400" y="178" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="middle">Bayesian / Deep KT</text>
+            <text x="400" y="205" fill="#e2e8f0" font-family="sans-serif" font-size="12" text-anchor="middle">• تقدير احتمالية الفهم P(L)</text>
+            <text x="400" y="225" fill="#e2e8f0" font-family="sans-serif" font-size="12" text-anchor="middle">• ضبط منطقة النمو القريب ZPD</text>
+
+            <rect x="560" y="120" width="190" height="125" rx="16" fill="#0f172a" stroke="#10b981" stroke-width="2.5"/>
+            <text x="655" y="155" fill="#34d399" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">3. السقالات السقراطية</text>
+            <text x="655" y="178" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="middle">Socratic AI Scaffolding</text>
+            <text x="655" y="205" fill="#e2e8f0" font-family="sans-serif" font-size="12" text-anchor="middle">• تلميحات تدريجية لا إجابات جاهزة</text>
+            <text x="655" y="225" fill="#e2e8f0" font-family="sans-serif" font-size="12" text-anchor="middle">• أسئلة سبر الفهم العميق</text>
+
+            <path d="M 240 182 L 300 182" stroke="url(#cyanG)" stroke-width="4" fill="none"/>
+            <polygon points="303,182 292,176 292,188" fill="#3b82f6"/>
+            <path d="M 495 182 L 555 182" stroke="url(#violetG)" stroke-width="4" fill="none"/>
+            <polygon points="558,182 547,176 547,188" fill="#ec4899"/>
+
+            <rect x="175" y="305" width="450" height="90" rx="16" fill="#111827" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6 4"/>
+            <text x="400" y="340" fill="#38bdf8" font-family="sans-serif" font-size="15" font-weight="bold" text-anchor="middle">4. حلقة التغذية الراجعة التكوينية المستمرة (Formative Feedback Telemetry)</text>
+            <text x="400" y="368" fill="#cbd5e1" font-family="sans-serif" font-size="12" text-anchor="middle">استجابة الطالب ← تحديث فوري لنموذج المعرفة ← تقليص الفجوة نحو معيار 2-Sigma (Bloom, 1984)</text>
+
+            <path d="M 655 245 L 655 350 L 630 350" stroke="#10b981" stroke-width="3" fill="none"/>
+            <path d="M 175 350 L 145 350 L 145 250" stroke="#06b6d4" stroke-width="3" fill="none"/>
+            <polygon points="145,247 139,258 151,258" fill="#06b6d4"/>
+          </svg>
+        `),
+
+        mixedMethodsDesign: createSvgDataUri(`
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+            <rect width="800" height="450" rx="20" fill="#070c1a" stroke="#1e293b" stroke-width="2"/>
+            <text x="400" y="42" fill="#f8fafc" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle">تصميم المنهج المختلط المتقارب (Convergent Mixed-Methods Design)</text>
+            <text x="400" y="68" fill="#a855f7" font-family="sans-serif" font-size="13" text-anchor="middle">[مخطط منهجي توضيحي - التكامل بين القياس الكمي التجريبي والتحليل الكيفي]</text>
+
+            <rect x="55" y="105" width="290" height="115" rx="14" fill="#0f172a" stroke="#06b6d4" stroke-width="2.5"/>
+            <text x="200" y="138" fill="#22d3ee" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">المسار الكمي (Quantitative Track)</text>
+            <text x="200" y="165" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">• تصميم شبه تجريبي (قبلي / بعدي)</text>
+            <text x="200" y="190" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="middle">• مقاييس التحصيل والحمل المعرفي (NASA-TLX)</text>
+
+            <rect x="455" y="105" width="290" height="115" rx="14" fill="#0f172a" stroke="#a855f7" stroke-width="2.5"/>
+            <text x="600" y="138" fill="#c084fc" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">المسار الكيفي (Qualitative Track)</text>
+            <text x="600" y="165" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">• تحليل سجلات المحادثات (Prompt Logs)</text>
+            <text x="600" y="190" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="middle">• مقابلات معمقة مع الأساتذة والطلبة</text>
+
+            <rect x="210" y="275" width="380" height="125" rx="18" fill="#111c35" stroke="#10b981" stroke-width="3"/>
+            <text x="400" y="312" fill="#34d399" font-family="sans-serif" font-size="17" font-weight="bold" text-anchor="middle">التثليث المنهجي ودمج الأدلة (Triangulation)</text>
+            <text x="400" y="342" fill="#f1f5f9" font-family="sans-serif" font-size="13" text-anchor="middle">مقارنة الأثر الإحصائي بأنماط التفاعل الفعلي مع الذكاء الاصطناعي</text>
+            <text x="400" y="370" fill="#fbbf24" font-family="sans-serif" font-size="12" text-anchor="middle">التمييز الصارم بين الفهم المستقل والاعتماد الآلي على النموذج</text>
+
+            <path d="M 200 220 L 330 275" stroke="#06b6d4" stroke-width="3.5" fill="none"/>
+            <path d="M 600 220 L 470 275" stroke="#a855f7" stroke-width="3.5" fill="none"/>
+          </svg>
+        `),
+
+        resultsChart: createSvgDataUri(`
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+            <rect width="800" height="450" rx="20" fill="#060a17" stroke="#1e293b" stroke-width="2"/>
+            <text x="400" y="38" fill="#f8fafc" font-family="sans-serif" font-size="19" font-weight="bold" text-anchor="middle">مقارنة الأداء التجريبي: الإجابات المباشرة مقابل التوجيه السقراطي الذكي</text>
+            <text x="400" y="64" fill="#fbbf24" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle">[بيانات تجريبية محاكاة لأغراض النموذج التفاعلي - Simulated Sandbox Dataset N=320]</text>
+
+            <line x1="110" y1="350" x2="720" y2="350" stroke="#475569" stroke-width="2"/>
+            <line x1="110" y1="100" x2="110" y2="350" stroke="#475569" stroke-width="2"/>
+
+            <line x1="110" y1="287" x2="720" y2="287" stroke="#1e293b" stroke-width="1" stroke-dasharray="4 4"/>
+            <line x1="110" y1="225" x2="720" y2="225" stroke="#1e293b" stroke-width="1" stroke-dasharray="4 4"/>
+            <line x1="110" y1="162" x2="720" y2="162" stroke="#1e293b" stroke-width="1" stroke-dasharray="4 4"/>
+
+            <text x="95" y="354" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="end">0%</text>
+            <text x="95" y="291" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="end">25%</text>
+            <text x="95" y="229" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="end">50%</text>
+            <text x="95" y="166" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="end">75%</text>
+            <text x="95" y="105" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="end">100%</text>
+
+            <rect x="165" y="195" width="55" height="155" rx="6" fill="#38bdf8"/>
+            <rect x="228" y="205" width="55" height="145" rx="6" fill="#8b5cf6"/>
+            <text x="192" y="185" fill="#38bdf8" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">62%</text>
+            <text x="255" y="195" fill="#c084fc" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">58%</text>
+            <text x="224" y="382" fill="#e2e8f0" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle">مجموعة ضابطة تقليدية</text>
+
+            <rect x="365" y="135" width="55" height="215" rx="6" fill="#38bdf8"/>
+            <rect x="428" y="230" width="55" height="120" rx="6" fill="#f43f5e"/>
+            <text x="392" y="125" fill="#38bdf8" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">86%</text>
+            <text x="455" y="220" fill="#fb7185" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">48%</text>
+            <text x="424" y="382" fill="#e2e8f0" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle">ذكاء اصطناعي مباشر (نسخ الحل)</text>
+
+            <rect x="565" y="140" width="55" height="210" rx="6" fill="#38bdf8"/>
+            <rect x="628" y="145" width="55" height="205" rx="6" fill="#10b981"/>
+            <text x="592" y="130" fill="#38bdf8" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">84%</text>
+            <text x="655" y="135" fill="#34d399" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">82%</text>
+            <text x="624" y="382" fill="#e2e8f0" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle">مساعد ذكي موجّه سقراطيًا</text>
+
+            <rect x="190" y="408" width="14" height="14" rx="3" fill="#38bdf8"/>
+            <text x="325" y="420" fill="#cbd5e1" font-family="sans-serif" font-size="12" text-anchor="end">إنجاز المهمة الفورية</text>
+            <rect x="370" y="408" width="14" height="14" rx="3" fill="#10b981"/>
+            <text x="595" y="420" fill="#cbd5e1" font-family="sans-serif" font-size="12" text-anchor="end">اختبار الاحتفاظ والفهم المستقل (بدون أداة)</text>
+          </svg>
+        `),
+
+        riskMatrix: createSvgDataUri(`
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+            <rect width="800" height="450" rx="20" fill="#070b18" stroke="#1e293b" stroke-width="2"/>
+            <text x="400" y="40" fill="#f8fafc" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle">مصفوفة المخاطر المعرفية والأخلاقية في التعليم الجامعي</text>
+            <text x="400" y="65" fill="#38bdf8" font-family="sans-serif" font-size="13" text-anchor="middle">[إطار تحليلي توضيحي استناداً إلى توجيهات UNESCO 2023 و Kasneci et al. 2023]</text>
+
+            <rect x="70" y="95" width="315" height="145" rx="14" fill="#171532" stroke="#f43f5e" stroke-width="2"/>
+            <text x="227" y="128" fill="#fb7185" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">1. التفريغ المعرفي (Cognitive Offloading)</text>
+            <text x="227" y="158" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">ضمور مهارات الصياغة والتحليل النقدي عند الاعتماد</text>
+            <text x="227" y="182" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">الكلي على التوليد الآلي دون معالجة ذهنية نشطة.</text>
+            <text x="227" y="215" fill="#fda4af" font-family="sans-serif" font-size="12" text-anchor="middle">مستوى الخطورة التربوية: مرتفع جداً</text>
+
+            <rect x="415" y="95" width="315" height="145" rx="14" fill="#171532" stroke="#f59e0b" stroke-width="2"/>
+            <text x="572" y="128" fill="#fbbf24" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">2. الهلوسة المرجعية (Hallucinated Citations)</text>
+            <text x="572" y="158" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">توليد مراجع أو إحصائيات تبدو مقنعة لغوياً</text>
+            <text x="572" y="182" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">لكنها غير موجودة في قواعد البيانات العلمية.</text>
+            <text x="572" y="215" fill="#fde68a" font-family="sans-serif" font-size="12" text-anchor="middle">الحل: التحقق المرجعي الإلزامي عبر المصادر الأولية</text>
+
+            <rect x="70" y="260" width="315" height="145" rx="14" fill="#0f1f2e" stroke="#8b5cf6" stroke-width="2"/>
+            <text x="227" y="293" fill="#c084fc" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">3. التحيز اللغوي والثقافي (Epistemic Bias)</text>
+            <text x="227" y="323" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">ضعف تمثيل السياقات البحثية العربية والمحلية</text>
+            <text x="227" y="347" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">في بيانات تدريب النماذج اللغوية العالمية.</text>
+            <text x="227" y="380" fill="#ddd6fe" font-family="sans-serif" font-size="12" text-anchor="middle">الحل: إثراء المدونات العلمية العربية المفتوحة</text>
+
+            <rect x="415" y="260" width="315" height="145" rx="14" fill="#0d2329" stroke="#10b981" stroke-width="2"/>
+            <text x="572" y="293" fill="#34d399" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">4. الحوكمة والتقييم الأصيل (Authentic Design)</text>
+            <text x="572" y="323" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">تحويل التقييم من الاختبارات النمطية إلى</text>
+            <text x="572" y="347" fill="#e2e8f0" font-family="sans-serif" font-size="13" text-anchor="middle">المناقشات الشفهية، المشاريع الميدانية، ونقد المخرجات.</text>
+            <text x="572" y="380" fill="#6ee7b7" font-family="sans-serif" font-size="12" text-anchor="middle">النتيجة: تكامل بشري-آلي مسؤول</text>
+          </svg>
+        `)
+      };
+
+      // =========================================================================
+      // 2. INITIAL RESEARCH KNOWLEDGE GRAPH DATA («الذكاء الاصطناعي في التعليم الجامعي»)
+      // =========================================================================
+      const STORAGE_KEY = 'ai_higher_ed_3d_knowledge_world_v1';
+
+      const GUIDED_CHAINS = [
+        {
+          id: 'chain-adaptive',
+          title: 'سلسلة التعلم التكيفي الذكي',
+          steps: [
+            { role: 'صورة علمية', icon: '🖼️', nodeId: 'img-adaptive' },
+            { role: 'المفهوم', icon: '💡', nodeId: 'con-adaptive' },
+            { role: 'التفسير العلمي', icon: '📖', nodeId: 'exp-adaptive' },
+            { role: 'الأدلة المرتبطة', icon: '📊', nodeId: 'evi-adaptive' }
+          ]
+        },
+        {
+          id: 'chain-results',
+          title: 'سلسلة أثر التوجيه السقراطي على التحصيل',
+          steps: [
+            { role: 'صورة علمية', icon: '🖼️', nodeId: 'img-results' },
+            { role: 'المفهوم', icon: '💡', nodeId: 'con-results' },
+            { role: 'التفسير العلمي', icon: '📖', nodeId: 'exp-results' },
+            { role: 'الأدلة المرتبطة', icon: '📊', nodeId: 'evi-results' }
+          ]
+        },
+        {
+          id: 'chain-methodology',
+          title: 'سلسلة تصميم المنهج المختلط وأدوات القياس',
+          steps: [
+            { role: 'صورة علمية', icon: '🖼️', nodeId: 'img-methodology' },
+            { role: 'المفهوم', icon: '💡', nodeId: 'con-methodology' },
+            { role: 'التفسير العلمي', icon: '📖', nodeId: 'exp-methodology' },
+            { role: 'الأدلة المرتبطة', icon: '📊', nodeId: 'evi-sample' }
+          ]
+        },
+        {
+          id: 'chain-ethics',
+          title: 'سلسلة المخاطر المعرفية والهلوسة المرجعية',
+          steps: [
+            { role: 'صورة علمية', icon: '🖼️', nodeId: 'img-ethics' },
+            { role: 'المفهوم', icon: '💡', nodeId: 'con-limitations' },
+            { role: 'التفسير العلمي', icon: '📖', nodeId: 'exp-limitations' },
+            { role: 'الأدلة المرتبطة', icon: '📊', nodeId: 'evi-limitations' }
+          ]
+        }
+      ];
+
+      function getDefaultGraphData() {
+        const nodes = [
+          {
+            id: 'core',
+            parentId: null,
+            type: 'core',
+            titleAr: 'الذكاء الاصطناعي في التعليم الجامعي',
+            titleEn: 'Artificial Intelligence in Higher Education',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 0, y: 0, z: 0,
+            summary: 'النواة المعرفية المركزية للبحث: استقصاء علمي متعدد الأبعاد لتحوّل التعليم الجامعي في عصر النماذج اللغوية الكبيرة والأنظمة التكيفية الذكية.',
+            details: 'ينطلق هذا البحث من دراسة التفاعل بين الذكاء الاصطناعي التوليدي والتكيفي من جهة، ومنظومة التدريس والتقييم والبحث الأكاديمي من جهة أخرى. تم تنظيم المعرفة في 8 فصول مترابطة تتيح الانتقال السلس من الصور العلمية إلى المفاهيم ثم تفسيراتها الإدراكية وصولاً إلى الأدلة والبيانات والمراجع الموثقة.',
+            metrics: [
+              { label: 'الفصول الرئيسية', value: '8 فصول' },
+              { label: 'السلاسل المعرفية', value: '4 مسارات' },
+              { label: 'طبيعة البيانات', value: 'مفاهيم + محاكاة تجريبية' },
+              { label: 'المراجع الموثقة', value: '4 مصادر دولية' }
+            ]
+          },
+          {
+            id: 'sec-1',
+            parentId: 'core',
+            type: 'section',
+            titleAr: '1. المقدمة وسؤال البحث',
+            titleEn: 'Introduction & Research Question',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 26, y: 8, z: 10,
+            summary: 'يحدد هذا القسم الإشكالية البحثية المحورية: كيف يمكن توظيف الذكاء الاصطناعي لتعزيز التفكير النقدي والتعلم العميق لدى طالب الجامعة دون الوقوع في الاعتماد الآلي؟',
+            details: 'تواجه الجامعات تحولاً جذرياً مع انتشار النماذج التوليدية. لا يكمن التحدي في منع التقنية أو قبولها المطلق، بل في تصميم بيئة تعليمية تجعل الذكاء الاصطناعي محفزاً للعمليات الذهنية العليا بدلاً من استبدالها.'
+          },
+          {
+            id: 'sec-1-q',
+            parentId: 'sec-1',
+            type: 'concept',
+            titleAr: 'سؤال البحث الرئيسي والفرضيات',
+            titleEn: 'Primary Research Question & Hypotheses',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 42, y: 15, z: 16,
+            summary: 'ما أثر استخدام أنظمة التوجيه السقراطي المدعومة بالذكاء الاصطناعي مقارنة بالإجابات التوليدية المباشرة على التحصيل العميق والاحتفاظ المعرفي لدى طلبة الجامعة؟',
+            details: 'الفرضية الأولى (H1): يحقق الطلبة الذين يتفاعلون مع مساعد ذكي مبرمج سقراطياً (يقدم أسئلة تلميحية) احتفاظاً معرفياً أعلى في الاختبارات البعدية المستقلة مقارنة بمن يستخدمون التوليد المباشر للحلول.\nالفرضية الثانية (H2): يرتبط الاستخدام غير الموجه بارتفاع معدل التفريغ المعرفي (Cognitive Offloading).'
+          },
+          {
+            id: 'sec-1-gap',
+            parentId: 'sec-1',
+            type: 'explanation',
+            titleAr: 'تفسير الفجوة البحثية في السياق الجامعي',
+            titleEn: 'Research Gap in Higher Education Context',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 40, y: 2, z: 24,
+            summary: 'تركز معظم الدراسات الأولية على سرعة إنجاز الواجبات، بينما تغفل قياس بقاء أثر التعلم بعد سحب أداة الذكاء الاصطناعي.',
+            details: 'توضح هذه العقدة أن قياس جودة التعلم الجامعي يتطلب التمييز بين «الأداء أثناء وجود المساعد الذكي» و«الكفاءة المستقلة بعد انتهاء جلسة التعلم»، وهو ما يعالجه التصميم المنهجي لهذا البحث.'
+          },
+          {
+            id: 'sec-2',
+            parentId: 'core',
+            type: 'section',
+            titleAr: '2. الإطار النظري والمفاهيم',
+            titleEn: 'Theoretical Framework & Concepts',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 10, y: 16, z: -26,
+            summary: 'يرتكز الإطار النظري على ثلاث نظريات تأسيسية: معضلة سيغما لبلوم (Bloom 2-Sigma)، منطقة النمو القريب لفيجوتسكي (ZPD)، ونظرية الحمل المعرفي (Cognitive Load Theory).',
+            details: 'يفسر هذا الفصل كيف تلتقي علوم الإدراك البشري مع خوارزميات تتبع المعرفة لتوفير سقالات تعليمية مخصصة لكل طالب جامعي.'
+          },
+          {
+            id: 'img-adaptive',
+            parentId: 'sec-2',
+            type: 'image',
+            titleAr: 'صورة علمية: معمارية التعلم التكيفي الذكي',
+            titleEn: 'Scientific Diagram: Adaptive AI Tutoring Loop',
+            provenance: 'مثال توضيحي تعليمي',
+            expanded: true,
+            x: 24, y: 27, z: -36,
+            imageUrl: SCIENTIFIC_SVGS.adaptiveArchitecture,
+            imageSource: 'مخطط معماري توضيحي مبني على أدبيات أنظمة التدريس الذكية (Intelligent Tutoring Systems) و (Bloom, 1984).',
+            chainId: 'chain-adaptive',
+            summary: 'بطاقة بصرية توضح الدورة المغلقة لنظام التعلم التكيفي: من ملف الطالب، إلى تتبع المعرفة العصبي، ثم السقالات السقراطية، وصولاً للتغذية الراجعة التكوينية.',
+            details: 'انقر على البطاقة لتكبيرها أو استخدم شريط المسار المعرفي للانتقال مباشرة من هذه الصورة العلمية إلى مفهوم التعلم التكيفي، ثم تفسيره الإدراكي، ثم الأدلة المرتبطة به.'
+          },
+          {
+            id: 'con-adaptive',
+            parentId: 'sec-2',
+            type: 'concept',
+            titleAr: 'مفهوم التعلم التكيفي ومعضلة 2-Sigma',
+            titleEn: 'Adaptive Learning & Bloom’s 2-Sigma Problem',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 8, y: 31, z: -44,
+            chainId: 'chain-adaptive',
+            summary: 'يشير مفهوم التعلم التكيفي إلى قدرة النظام الذكي على تعديل مستوى التجريد والتلميحات ديناميكياً لمحاكاة أثر المعلم الخصوصي الفردي.',
+            details: 'أثبت بنجامين بلوم (1984) أن الطالب الذي يتلقى توجيهاً فردياً (One-to-One Tutoring) يتفوق بمقدار انحرافين معياريين (2 Sigma) على أقرانه في القاعات التقليدية. يسعى الذكاء الاصطناعي التربوي لتقريب هذه الفجوة داخل القاعات الجامعية الكبيرة.'
+          },
+          {
+            id: 'exp-adaptive',
+            parentId: 'sec-2',
+            type: 'explanation',
+            titleAr: 'التفسير الإدراكي: تتبع المعرفة والسقالات (ZPD)',
+            titleEn: 'Cognitive Mechanism: Knowledge Tracing & ZPD Scaffolding',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: -8, y: 26, z: -40,
+            chainId: 'chain-adaptive',
+            summary: 'لماذا ينجح التوجيه التكيفي؟ لأنه يحافظ على الطالب داخل «منطقة النمو القريب» (ZPD) ويمنع الإحباط الناتج عن الحمل المعرفي الزائد.',
+            details: 'عندما يحلل النموذج الذكي خطأ الطالب في خطوة رياضية أو برمجية، فإنه لا يعطيه الحل النهائي، بل يطرح سؤالاً تفكيكياً يعيد تنشيط الذاكرة العاملة ويبني الروابط العصبية للمفهوم.'
+          },
+          {
+            id: 'evi-adaptive',
+            parentId: 'sec-2',
+            type: 'evidence',
+            titleAr: 'الأدلة المرتبطة: مقارنة التوجيه الفردي بالمحاضرة',
+            titleEn: 'Linked Evidence: Tutoring vs. Lecture Effect Size',
+            provenance: 'مرجع علمي موثق (حقيقي)',
+            expanded: true,
+            x: -4, y: 14, z: -48,
+            chainId: 'chain-adaptive',
+            summary: 'تؤكد الأدبيات المرجعية (Bloom, 1984; Kasneci et al., 2023) أن التفاعل الحواري المخصص يرفع كفاءة الاستيعاب المفاهيمي مقارنة بالتلقي السلبي.',
+            details: 'الأدلة التربوية الموثقة تبين أن تفوق التوجيه الفردي لا يعود لمجرد وجود وسيط تقني، بل لآلية التغذية الراجعة التصحيحية الفورية (Formative Corrective Feedback) التي تمنع ترسخ المفاهيم الخاطئة.',
+            metrics: [
+              { label: 'حجم الأثر المرجعي (Bloom)', value: '+2.0 Sigma' },
+              { label: 'آلية التفاعل الفعالة', value: 'تغذية راجعة تكوينية' }
+            ]
+          },
+          {
+            id: 'sec-3',
+            parentId: 'core',
+            type: 'section',
+            titleAr: '3. المنهجية وأدوات جمع البيانات',
+            titleEn: 'Methodology & Data Collection Tools',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: -24, y: 12, z: -16,
+            summary: 'يعتمد البحث منهجاً مختلطاً متقارباً (Convergent Mixed-Methods) يجمع بين التجربة شبه المعملية وتحليل سجلات التفاعل اللغوي.',
+            details: 'يضمن هذا التصميم عدم الاكتفاء بالاستبيانات الانطباعية، بل يقيس الأداء الفعلي للطلبة في مهام حل المشكلات الأكاديمية مع رصد نوعية الأوامر (Prompts) المستخدمة.'
+          },
+          {
+            id: 'img-methodology',
+            parentId: 'sec-3',
+            type: 'image',
+            titleAr: 'صورة علمية: مخطط المنهج المختلط والتثليث',
+            titleEn: 'Scientific Diagram: Mixed-Methods Triangulation',
+            provenance: 'مثال توضيحي تعليمي',
+            expanded: true,
+            x: -40, y: 22, z: -24,
+            imageUrl: SCIENTIFIC_SVGS.mixedMethodsDesign,
+            imageSource: 'تصميم منهجي توضيحي يدمج المسار الكمي شبه التجريبي والمسار الكيفي لتحليل المحادثات.',
+            chainId: 'chain-methodology',
+            summary: 'بطاقة بصرية توضح تقاطع البيانات الكمية (الاختبارات القبلية/البعدية ومقياس الحمل المعرفي) مع البيانات الكيفية (تحليل سجلات الأوامر والمقابلات).',
+            details: 'يوضح المخطط كيف يلتقي المساران في نقطة التثليث المنهجي (Triangulation) للتحقق من صدق النتائج وتجنب التحيز الانطباعي.'
+          },
+          {
+            id: 'con-methodology',
+            parentId: 'sec-3',
+            type: 'concept',
+            titleAr: 'مفهوم التصميم شبه التجريبي ثلاثي المجموعات',
+            titleEn: 'Three-Arm Quasi-Experimental Design',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: -44, y: 10, z: -12,
+            chainId: 'chain-methodology',
+            summary: 'تقسيم المشاركين إلى ثلاث مجموعات متكافئة: ضابطة تقليدية، مجموعة ذكاء اصطناعي مفتوح مباشر، ومجموعة مساعد ذكي موجّه سقراطياً.',
+            details: 'يتيح هذا التصميم الثلاثي عزل متغير «طريقة التوجيه التربوي» عن متغير «توفر تقنية الذكاء الاصطناعي بحد ذاتها».'
+          },
+          {
+            id: 'exp-methodology',
+            parentId: 'sec-3',
+            type: 'explanation',
+            titleAr: 'تفسير أدوات القياس والصدق والثبات',
+            titleEn: 'Psychometric Instruments & Rubric Calibration',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: -36, y: 2, z: -28,
+            chainId: 'chain-methodology',
+            summary: 'استخدام ثلاث أدوات قياس متكاملة: اختبار التحصيل المفاهيمي المؤجل، مقياس الحمل المعرفي (NASA-TLX)، وبطاقة تقييم جودة الأوامر البحثية.',
+            details: 'يتم التحقق من ثبات التصحيح عبر مُحكّمين مستقلين (Inter-rater reliability) مع اختبار بعدي يُجرى بدون مساعدة الذكاء الاصطناعي لقياس الاستيعاب الحقيقي.'
+          },
+          {
+            id: 'evi-sample',
+            parentId: 'sec-3',
+            type: 'evidence',
+            titleAr: 'بيانات العينة التجريبية وتوزيع الكليات (محاكاة)',
+            titleEn: 'Simulated Sample Distribution Dataset (N=320)',
+            provenance: 'بيانات تجريبية (محاكاة بحثية)',
+            expanded: true,
+            x: -28, y: 24, z: -8,
+            chainId: 'chain-methodology',
+            summary: '[بيانات تجريبية محاكاة لأغراض النموذج التفاعلي]: توزيع افتراضي متوازن يشمل 320 طالباً وطالبة عبر 4 تخصصات جامعية لاختبار النموذج.',
+            details: 'تنبيه منهجي: هذه الأرقام تمثل بيانات تجريبية محاكاة (Sandbox Dataset) مصممة لتوضيح كيفية تمثيل العينات في الفضاء المعرفي، وليست مستخلصة من دراسة ميدانية منشورة.',
+            metrics: [
+              { label: 'حجم العينة المحاكاة', value: 'N = 320' },
+              { label: 'الهندسة والحاسوب', value: '90 طالباً' },
+              { label: 'العلوم الطبية والحيوية', value: '80 طالباً' },
+              { label: 'العلوم الإنسانية والتربوية', value: '150 طالباً' }
+            ]
+          },
+          {
+            id: 'sec-4',
+            parentId: 'core',
+            type: 'section',
+            titleAr: '4. النتائج والبيانات',
+            titleEn: 'Results & Empirical Data',
+            provenance: 'بيانات تجريبية (محاكاة بحثية)',
+            expanded: true,
+            x: -26, y: -8, z: 16,
+            summary: 'تعرض هذه العقدة مخرجات النموذج التجريبي المحاكى للمقارنة بين الأداء الفوري أثناء استخدام الذكاء الاصطناعي والأداء المستقل في الاختبار المؤجل.',
+            details: 'تظهر البيانات التجريبية المحاكاة مفارقة مهمة: التوليد المباشر يرفع درجات الواجبات المنزلية الفورية لكنه يخفض درجة الاحتفاظ المعرفي المستقل، بينما يحقق التوجيه السقراطي توازناً عالياً في المؤشرين.'
+          },
+          {
+            id: 'img-results',
+            parentId: 'sec-4',
+            type: 'image',
+            titleAr: 'صورة علمية: منحنيات التحصيل والاحتفاظ المعرفي',
+            titleEn: 'Scientific Chart: Immediate Task vs. Retention Scores',
+            provenance: 'بيانات تجريبية (محاكاة بحثية)',
+            expanded: true,
+            x: -42, y: -4, z: 28,
+            imageUrl: SCIENTIFIC_SVGS.resultsChart,
+            imageSource: 'بيانات تجريبية محاكاة داخلية (Simulated Sandbox Data) لتوضيح الفجوة بين الإنجاز الفوري والاحتفاظ المستقل.',
+            chainId: 'chain-results',
+            summary: 'رسم بياني مقارن يوضح الفجوة بين إنجاز المهمة بمساعدة الأداة واختبار الفهم المستقل عبر المجموعات الثلاث (بيانات محاكاة تجريبية).',
+            details: 'لاحظ في الرسم البياني أن مجموعة الذكاء الاصطناعي المباشر حققت 86% في المهمة الفورية لكنها تراجعت إلى 48% في الاختبار المستقل، بينما حافظت مجموعة المساعد السقراطي على 82% في الاختبار المستقل.'
+          },
+          {
+            id: 'con-results',
+            parentId: 'sec-4',
+            type: 'concept',
+            titleAr: 'مفهوم الفجوة بين الأداء المعاون والكفاءة المستقلة',
+            titleEn: 'Assisted Performance vs. Independent Competence Gap',
+            provenance: 'بيانات تجريبية (محاكاة بحثية)',
+            expanded: true,
+            x: -44, y: -16, z: 18,
+            chainId: 'chain-results',
+            summary: 'ارتفاع جودة المخرج النصي المُنتج بالذكاء الاصطناعي لا يعني بالضرورة حدوث تعلم فعلي في البنية المعرفية للطالب.',
+            details: 'يمثل هذا المفهوم حجر الزاوية في تفسير النتائج: عندما ينسخ الطالب مخرجات النموذج اللغوي دون معالجة نقدية، ينشأ «وهم الكفاءة» (Illusion of Competence).'
+          },
+          {
+            id: 'exp-results',
+            parentId: 'sec-4',
+            type: 'explanation',
+            titleAr: 'تفسير التباين: الاسترجاع النشط مقابل التفريغ الذهني',
+            titleEn: 'Variance Explanation: Active Retrieval vs. Offloading',
+            provenance: 'مثال توضيحي تعليمي',
+            expanded: true,
+            x: -34, y: -22, z: 30,
+            chainId: 'chain-results',
+            summary: 'يتفوق التوجيه السقراطي لأنه يجبر الدماغ على ممارسة الاسترجاع النشط (Active Retrieval) وبناء الحجج الذاتية قبل تلقي التصحيح.',
+            details: 'وفق علوم الأعصاب الإدراكية، تتقوى المسارات المشبكية عند بذل جهد ذهني محسوب لحل الإشكاليات، بينما يؤدي تلقي الجواب الجاهز إلى تجاوز مرحلة الترميز العميق في الذاكرة طويلة المدى.'
+          },
+          {
+            id: 'evi-results',
+            parentId: 'sec-4',
+            type: 'evidence',
+            titleAr: 'الأدلة الكمية التجريبية: مصفوفة القياس المحاكاة',
+            titleEn: 'Simulated Quantitative Evidence Matrix',
+            provenance: 'بيانات تجريبية (محاكاة بحثية)',
+            expanded: true,
+            x: -22, y: -20, z: 22,
+            chainId: 'chain-results',
+            summary: 'ملخص المؤشرات الرقمية من مجموعة البيانات التجريبية المحاكاة داخل التطبيق للمقارنة بين أنماط الاستخدام الثلاثة.',
+            details: 'توضح هذه المصفوفة كيف يمكن للباحث تنظيم نتائج القياس القبلي والبعدي في لوحة معلومات تفاعلية قابلة للتحرير والتحديث عند إدخال بيانات ميدانية حقيقية.',
+            metrics: [
+              { label: 'احتفاظ المجموعة الضابطة', value: '58% (محاكاة)' },
+              { label: 'احتفاظ النسخ المباشر', value: '48% (محاكاة)' },
+              { label: 'احتفاظ التوجيه السقراطي', value: '82% (محاكاة)' },
+              { label: 'التحقق من المراجع', value: '+64% مع التدريب' }
+            ]
+          },
+          {
+            id: 'sec-5',
+            parentId: 'core',
+            type: 'section',
+            titleAr: '5. المناقشة والقيود',
+            titleEn: 'Discussion & Methodological Limitations',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 0, y: -20, z: 26,
+            summary: 'يناقش هذا القسم التحديات البنيوية والمعرفية التي ترافق دمج الذكاء الاصطناعي في الجامعة، وعلى رأسها الهلوسة العلمية والتحيز اللغوي.',
+            details: 'لا تكتمل أي دراسة علمية رصينة دون فحص القيود المنهجية والمخاطر الأخلاقية التي قد تحد من تعميم النتائج.'
+          },
+          {
+            id: 'img-ethics',
+            parentId: 'sec-5',
+            type: 'image',
+            titleAr: 'صورة علمية: مصفوفة المخاطر المعرفية والهلوسة',
+            titleEn: 'Scientific Diagram: Cognitive & Epistemic Risk Matrix',
+            provenance: 'مثال توضيحي تعليمي',
+            expanded: true,
+            x: 10, y: -32, z: 38,
+            imageUrl: SCIENTIFIC_SVGS.riskMatrix,
+            imageSource: 'إطار تحليلي توضيحي مستند إلى تقارير UNESCO (2023) و Kasneci et al. (2023).',
+            chainId: 'chain-ethics',
+            summary: 'بطاقة بصرية تصنف 4 محاور حرجة: التفريغ المعرفي، الهلوسة المرجعية، التحيز اللغوي والثقافي، والحوكمة عبر التقييم الأصيل.',
+            details: 'افتح البطاقة بالعرض المكبر لاستعراض الآليات الوقائية المقترحة لكل خطر من المخاطر الأربعة في البيئة الجامعية.'
+          },
+          {
+            id: 'con-limitations',
+            parentId: 'sec-5',
+            type: 'concept',
+            titleAr: 'مفهوم الهلوسة المرجعية والتفريغ المعرفي',
+            titleEn: 'Algorithmic Hallucination & Cognitive Offloading',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: -6, y: -34, z: 36,
+            chainId: 'chain-ethics',
+            summary: 'توليد النماذج اللغوية لنصوص ومراجع تبدو أكاديمية رصينة ظاهرياً لكنها مختلقة إحصائياً، بالتوازي مع تراجع الفحص النقدي لدى المستخدم.',
+            details: 'تعمل النماذج اللغوية الكبيرة عبر التنبؤ الاحتمالي بالرموز اللغوية (Next-token Prediction) وليس عبر استرجاع الحقائق الموثقة، مما يجعل التدقيق البشري شرطاً لا غنى عنه.'
+          },
+          {
+            id: 'exp-limitations',
+            parentId: 'sec-5',
+            type: 'explanation',
+            titleAr: 'تفسير القيود المنهجية والتحيز اللغوي',
+            titleEn: 'Methodological Constraints & Arabic Corpus Representation',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 2, y: -26, z: 46,
+            chainId: 'chain-ethics',
+            summary: 'تتأثر دقة النماذج الذكية في التخصصات الدقيقة باللغة العربية بمحدودية الأبحاث العربية المفتوحة في بيانات التدريب العالمية.',
+            details: 'من القيود المهمة أيضاً قصر الفترة الزمنية للدراسات الحالية، مما يستلزم دراسات تتبعية (Longitudinal Studies) تمتد لعدة فصول دراسية.'
+          },
+          {
+            id: 'evi-limitations',
+            parentId: 'sec-5',
+            type: 'evidence',
+            titleAr: 'أدلة الرصد الكيفي: أنماط أخطاء التوثيق (محاكاة)',
+            titleEn: 'Qualitative Observation Evidence [Simulated Scenarios]',
+            provenance: 'بيانات تجريبية (محاكاة بحثية)',
+            expanded: true,
+            x: 16, y: -22, z: 34,
+            chainId: 'chain-ethics',
+            summary: 'تحليل سيناريوهات تجريبية توضيحية يبين أن غياب التدريب على التحقق المرجعي يؤدي لقبول المراجع المولّدة آلياً دون فحص.',
+            details: 'عند إلزام الطلبة بإرفاق رابط DOI أو مصدر أولي لكل اقتباس وتوثيق خطوات المحادثة، تنخفض نسبة الأخطاء المرجعية بشكل حاد.'
+          },
+          {
+            id: 'sec-6',
+            parentId: 'core',
+            type: 'section',
+            titleAr: '6. التوصيات',
+            titleEn: 'Actionable Recommendations',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 26, y: -14, z: 12,
+            summary: 'منظومة توصيات عملية للجامعات لصياغة سياسات الذكاء الاصطناعي، وتطوير أساليب التقييم، وبناء الكفاءة النقدية للأساتذة والطلبة.',
+            details: 'تنتقل التوصيات من سياسات المنع غير القابلة للتطبيق إلى سياسات «الدمج المنهجي المشروط بالشفافية والمساءلة المعرفية».'
+          },
+          {
+            id: 'con-rec-policy',
+            parentId: 'sec-6',
+            type: 'concept',
+            titleAr: 'إعادة تصميم التقييمات الجامعية (Authentic Assessment)',
+            titleEn: 'Authentic & Process-Oriented Assessment Redesign',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: 40, y: -20, z: 18,
+            summary: 'الانتقال من تقييم المنتج النصي النهائي فقط إلى تقييم مسار التفكير، والمناقشة الشفهية، والتطبيقات العملية السياقية.',
+            details: 'تشمل الآليات المقترحة: تكليف الطلبة بنقد مخرجات الذكاء الاصطناعي وكشف أخطائها المنطقية أو المرجعية، وتوثيق سجل الحوار (Prompt Portfolio) كجزء من التقييم.'
+          },
+          {
+            id: 'exp-rec-training',
+            parentId: 'sec-6',
+            type: 'explanation',
+            titleAr: 'خارطة طريق محو الأمية النقدية للذكاء الاصطناعي',
+            titleEn: 'Critical AI Literacy Curriculum for Faculty & Students',
+            provenance: 'مثال توضيحي تعليمي',
+            expanded: true,
+            x: 38, y: -10, z: 4,
+            summary: 'تدريب أعضاء هيئة التدريس والطلبة على هندسة الأوامر السقراطية، والتحقق المرجعي الصارم، وأخلاقيات الخصوصية وحقوق الملكية الفكرية.',
+            details: 'توصي الخارطة بإدراج وحدة تدريبية تأسيسية في السنة الجامعية الأولى حول «الاستخدام الأخلاقي والعلمي للذكاء الاصطناعي في البحث الأكاديمي».'
+          },
+          {
+            id: 'sec-7',
+            parentId: 'core',
+            type: 'section',
+            titleAr: '7. المصادر والمراجع',
+            titleEn: 'Verified Academic Sources & References',
+            provenance: 'مرجع علمي موثق (حقيقي)',
+            expanded: true,
+            x: 22, y: -6, z: -22,
+            summary: 'قائمة بالمراجع الأكاديمية والتقارير الدولية الحقيقية والموثقة التي يستند إليها الإطار النظري والمنهجي في هذا العالم المعرفي.',
+            details: 'التزاماً بمعايير الأمانة العلمية وعدم اختلاق المراجع، تضم هذه العقدة أربعة مصادر دولية وأكاديمية حقيقية وراسخة في أدبيات تكنولوجيا التعليم والذكاء الاصطناعي.'
+          },
+          {
+            id: 'ref-unesco',
+            parentId: 'sec-7',
+            type: 'reference',
+            titleAr: 'UNESCO (2023) — توجيهات الذكاء الاصطناعي التوليدي في التعليم والبحث',
+            titleEn: 'UNESCO (2023). Guidance for generative AI in education and research',
+            provenance: 'مرجع علمي موثق (حقيقي)',
+            expanded: true,
+            x: 38, y: -2, z: -32,
+            summary: 'أول إطار توجيهي عالمي صادر عن منظمة اليونسكو لتنظيم استخدام الذكاء الاصطناعي التوليدي في المؤسسات التعليمية والبحثية.',
+            details: 'يؤكد تقرير اليونسكو (2023) على مبدأ التمركز حول الإنسان (Human-centered approach)، وحماية وكالة المتعلم (Learner Agency)، وضرورة التحقق المؤسسي من الأدوات قبل اعتمادها.'
+          },
+          {
+            id: 'ref-kasneci',
+            parentId: 'sec-7',
+            type: 'reference',
+            titleAr: 'Kasneci et al. (2023) — فرص وتحديات النماذج اللغوية الكبيرة في التعليم',
+            titleEn: 'Kasneci, E., et al. (2023). ChatGPT for good? Learning and Individual Differences, 103, 102274',
+            provenance: 'مرجع علمي موثق (حقيقي)',
+            expanded: true,
+            x: 34, y: -14, z: -34,
+            summary: 'ورقة بحثية مرجعية محكّمة تشارك فيها نخبة من الباحثين لتحليل إمكانات ومخاطر النماذج اللغوية الكبيرة للطلاب والأساتذة.',
+            details: 'منشورة في مجلة Learning and Individual Differences (Elsevier, 2023)، وتفصّل كيف يمكن توظيف النماذج اللغوية لتخصيص التعلم مع التحذير من التحيز والاعتماد المفرط.'
+          },
+          {
+            id: 'ref-bloom',
+            parentId: 'sec-7',
+            type: 'reference',
+            titleAr: 'Bloom (1984) — معضلة 2-Sigma والبحث عن طرق تدريس بفعالية التوجيه الفردي',
+            titleEn: 'Bloom, B. S. (1984). The 2 Sigma Problem. Educational Researcher, 13(6), 4–16',
+            provenance: 'مرجع علمي موثق (حقيقي)',
+            expanded: true,
+            x: 26, y: -18, z: -28,
+            summary: 'الدراسة الكلاسيكية التأسيسية التي أثبتت تفوق التوجيه الفردي بمقدار انحرافين معياريين عن التعليم الجماعي التقليدي.',
+            details: 'تشكل هذه الورقة الأساس النظري لكل أبحاث أنظمة التدريس الذكية (Intelligent Tutoring Systems) الساعية لمحاكاة التوجيه الشخصي.'
+          },
+          {
+            id: 'ref-mollick',
+            parentId: 'sec-7',
+            type: 'reference',
+            titleAr: 'Mollick & Mollick (2023) — سبعة أساليب تربوية لتوظيف الذكاء الاصطناعي للطلاب',
+            titleEn: 'Mollick, E. R., & Mollick, L. (2023). Assigning AI: Seven Approaches for Students',
+            provenance: 'مرجع علمي موثق (حقيقي)',
+            expanded: true,
+            x: 32, y: 6, z: -26,
+            summary: 'دراسة تطبيقية تحدد أدوار الذكاء الاصطناعي كمدرب سقراطي (AI as Tutor/Coach) ومحفز للتفكير النقدي في التعليم الجامعي.',
+            details: 'توضح الدراسة كيفية صياغة أوامر توجيهية تمنع النموذج من إعطاء الحل المباشر وتجبر الطالب على قيادة عملية التعلم.'
+          },
+          {
+            id: 'sec-8',
+            parentId: 'core',
+            type: 'section',
+            titleAr: '8. الخاتمة والأسئلة المفتوحة',
+            titleEn: 'Conclusion & Open Questions',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: -8, y: 18, z: 24,
+            summary: 'خلاصة تركيبية لمسار البحث وآفاق الأسئلة العلمية المفتوحة للباحثين في الجيل القادم من تقنيات التعليم الجامعي.',
+            details: 'يخلص البحث إلى أن القيمة الحقيقية للذكاء الاصطناعي في الجامعة لا تكمن في أتمتة الإجابات، بل في الارتقاء بجودة الأسئلة التي يطرحها الطالب والباحث.'
+          },
+          {
+            id: 'con-conclusion',
+            parentId: 'sec-8',
+            type: 'concept',
+            titleAr: 'الخلاصة التركيبية: الشراكة الإدراكية المسؤولة',
+            titleEn: 'Cognitive Partnership vs. Automation',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: -16, y: 28, z: 34,
+            summary: 'يتحقق التفوق الأكاديمي عندما يُصمّم الذكاء الاصطناعي كشريك إدراكي سقراطي يدعم الاستقلالية الفكرية ولا يحل محلها.',
+            details: 'تتكامل في هذه الخلاصة نتائج الفصول السبعة السابقة لتؤكد أن التصميم التربوي يسبق الأداة التقنية دائماً.'
+          },
+          {
+            id: 'exp-open-q',
+            parentId: 'sec-8',
+            type: 'explanation',
+            titleAr: 'الأسئلة المفتوحة للبحوث المستقبلية طويلة المدى',
+            titleEn: 'Open Questions for Longitudinal Research',
+            provenance: 'إطار مفاهيمي ومنهجي',
+            expanded: true,
+            x: -2, y: 26, z: 38,
+            summary: 'ما الأثر التراكمي لاستخدام المساعدات الذكية عبر 4 سنوات جامعية كاملة على مهارات الإبداع الأصيل وحل المشكلات غير المهيكلة؟',
+            details: 'سؤال مفتوح ثانٍ: كيف نبني نماذج لغوية أكاديمية مفتوحة المصدر عالية الدقة باللغة العربية تراعي الخصوصية المؤسسية للجامعات؟'
+          }
+        ];
+
+        const links = [
+          { id: 'lnk-c1-1', source: 'img-adaptive', target: 'con-adaptive', label: 'يمثّل بصريًا', isChain: true },
+          { id: 'lnk-c1-2', source: 'con-adaptive', target: 'exp-adaptive', label: 'يفسّر علميًا', isChain: true },
+          { id: 'lnk-c1-3', source: 'exp-adaptive', target: 'evi-adaptive', label: 'يدعم بالدليل', isChain: true },
+          { id: 'lnk-c1-ref', source: 'evi-adaptive', target: 'ref-bloom', label: 'موثق في مرجع', isChain: false },
+
+          { id: 'lnk-c2-1', source: 'img-results', target: 'con-results', label: 'يمثّل بصريًا', isChain: true },
+          { id: 'lnk-c2-2', source: 'con-results', target: 'exp-results', label: 'يفسّر علميًا', isChain: true },
+          { id: 'lnk-c2-3', source: 'exp-results', target: 'evi-results', label: 'يدعم بالدليل التجريبي', isChain: true },
+
+          { id: 'lnk-c3-1', source: 'img-methodology', target: 'con-methodology', label: 'يمثّل بصريًا', isChain: true },
+          { id: 'lnk-c3-2', source: 'con-methodology', target: 'exp-methodology', label: 'يفسّر علميًا', isChain: true },
+          { id: 'lnk-c3-3', source: 'exp-methodology', target: 'evi-sample', label: 'يدعم بالبيانات', isChain: true },
+
+          { id: 'lnk-c4-1', source: 'img-ethics', target: 'con-limitations', label: 'يمثّل بصريًا', isChain: true },
+          { id: 'lnk-c4-2', source: 'con-limitations', target: 'exp-limitations', label: 'يفسّر علميًا', isChain: true },
+          { id: 'lnk-c4-3', source: 'exp-limitations', target: 'evi-limitations', label: 'يدعم بالدليل', isChain: true },
+
+          { id: 'lnk-cross-1', source: 'sec-1-q', target: 'con-results', label: 'يجيب عنه في', isChain: false },
+          { id: 'lnk-cross-2', source: 'con-limitations', target: 'con-rec-policy', label: 'يعالج عبر توصية', isChain: false },
+          { id: 'lnk-cross-3', source: 'con-rec-policy', target: 'ref-unesco', label: 'يستند إلى', isChain: false },
+          { id: 'lnk-cross-4', source: 'exp-adaptive', target: 'ref-mollick', label: 'يطبق أساليب', isChain: false },
+          { id: 'lnk-cross-5', source: 'con-limitations', target: 'ref-kasneci', label: 'موثق في مرجع', isChain: false }
+        ];
+
+        return { nodes, links };
+      }
+
+      // =========================================================================
+      // 3. STATE MANAGEMENT & LOCAL STORAGE PERSISTENCE
+      // =========================================================================
+      let graphData = { nodes: [], links: [] };
+      let selectedNodeId = 'core';
+      let navigationHistory = [];
+      let activeChainIndex = 0;
+      let isLinkMode = false;
+      let pendingLinkSourceId = null;
+      let isPanMode = false;
+      let reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let lightboxZoom = 1;
+      let contextMenuNodeId = null;
+
+      function loadStateFromStorage() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.nodes) && parsed.nodes.length > 0 && Array.isArray(parsed.links)) {
+              const defaults = getDefaultGraphData();
+              const defaultMap = new Map(defaults.nodes.map(n => [n.id, n]));
+              parsed.nodes.forEach(n => {
+                if (n.type === 'image' && (!n.imageUrl || n.imageUrl.length < 30)) {
+                  const defNode = defaultMap.get(n.id);
+                  if (defNode && defNode.imageUrl) n.imageUrl = defNode.imageUrl;
+                }
+              });
+              graphData = parsed;
+              return;
+            }
+          }
+        } catch (e) {
+          // Fallback to default data
+        }
+        graphData = getDefaultGraphData();
+      }
+
+      function saveStateToStorage() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(graphData));
+          const badge = document.getElementById('save-status-badge');
+          if (badge) {
+            badge.classList.remove('hidden');
+            badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> تم الحفظ محلياً ✓';
+          }
+        } catch (e) {
+          // Ignore storage quota errors
+        }
+      }
+
+      function showToast(msg) {
+        const toast = document.getElementById('toast-box');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.classList.remove('hidden');
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 2800);
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D SCENE, NODES, LIGHT CURVES & PARTICLES
+      // =========================================================================
+      const container = document.getElementById('canvas-container');
+      const labelsLayer = document.getElementById('labels-layer');
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x050814, 0.0062);
+
+      const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.5, 450);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setClearColor(0x050814, 1);
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0x94a3b8, 0.85);
+      scene.add(ambientLight);
+
+      const coreLight = new THREE.PointLight(0x38bdf8, 2.4, 130);
+      coreLight.position.set(0, 8, 8);
+      scene.add(coreLight);
+
+      const violetLight = new THREE.PointLight(0x8b5cf6, 1.8, 140);
+      violetLight.position.set(-30, -20, -20);
+      scene.add(violetLight);
+
+      const particleCount = 420;
+      const particleGeo = new THREE.BufferGeometry();
+      const particlePositions = new Float32Array(particleCount * 3);
+      for (let i = 0; i < particleCount; i++) {
+        particlePositions[i * 3] = (Math.random() - 0.5) * 220;
+        particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 160;
+        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 220;
+      }
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+      const particleMat = new THREE.PointsMaterial({
+        color: 0x38bdf8,
+        size: 0.65,
+        transparent: true,
+        opacity: 0.42
+      });
+      const particleSystem = new THREE.Points(particleGeo, particleMat);
+      scene.add(particleSystem);
+
+      const nodesGroup = new THREE.Group();
+      const edgesGroup = new THREE.Group();
+      scene.add(edgesGroup);
+      scene.add(nodesGroup);
+
+      const coreRingsGroup = new THREE.Group();
+      const ringGeo1 = new THREE.TorusGeometry(5.6, 0.06, 12, 64);
+      const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.45 });
+      const ringMesh1 = new THREE.Mesh(ringGeo1, ringMat1);
+      ringMesh1.rotation.x = Math.PI / 2.6;
+      coreRingsGroup.add(ringMesh1);
+
+      const ringGeo2 = new THREE.TorusGeometry(7.2, 0.05, 12, 64);
+      const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.32 });
+      const ringMesh2 = new THREE.Mesh(ringGeo2, ringMat2);
+      ringMesh2.rotation.y = Math.PI / 3;
+      ringMesh2.rotation.x = -Math.PI / 4;
+      coreRingsGroup.add(ringMesh2);
+      scene.add(coreRingsGroup);
+
+      const nodeObjectsMap = new Map();
+      const edgeObjectsList = [];
+
+      const TYPE_STYLE = {
+        core: { color: 0x22d3ee, emissive: 0x0891b2, radius: 3.3, badgeBg: 'bg-cyan-500/25 text-cyan-200 border-cyan-400/50', labelAr: 'النواة المركزية', icon: '⚛️' },
+        section: { color: 0x06b6d4, emissive: 0x0e7490, radius: 2.1, badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40', labelAr: 'فصل رئيسي', icon: '💠' },
+        concept: { color: 0x8b5cf6, emissive: 0x5b21b6, radius: 1.45, badgeBg: 'bg-violet-500/20 text-violet-300 border-violet-400/40', labelAr: 'مفهوم علمي', icon: '💡' },
+        explanation: { color: 0x3b82f6, emissive: 0x1d4ed8, radius: 1.3, badgeBg: 'bg-sky-500/20 text-sky-300 border-sky-400/40', labelAr: 'تفسير وآلية', icon: '📖' },
+        image: { color: 0xec4899, emissive: 0xbe185d, radius: 1.65, badgeBg: 'bg-pink-500/20 text-pink-300 border-pink-400/40', labelAr: 'صورة علمية', icon: '🖼️' },
+        evidence: { color: 0x10b981, emissive: 0x047857, radius: 1.38, badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40', labelAr: 'دليل وبيانات', icon: '📊' },
+        data: { color: 0x10b981, emissive: 0x047857, radius: 1.38, badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40', labelAr: 'بيانات تجريبية', icon: '📊' },
+        reference: { color: 0xf59e0b, emissive: 0xb45309, radius: 1.25, badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-400/40', labelAr: 'مرجع موثق', icon: '📚' }
+      };
+
+      function isNodeVisible(node) {
+        if (!node.parentId) return true;
+        let curr = graphData.nodes.find(n => n.id === node.parentId);
+        while (curr) {
+          if (curr.expanded === false) return false;
+          if (!curr.parentId) break;
+          curr = graphData.nodes.find(n => n.id === curr.parentId);
+        }
+        return true;
+      }
+
+      function getChildrenCount(nodeId) {
+        return graphData.nodes.filter(n => n.parentId === nodeId).length;
+      }
+
+      function createGeometryForType(type, radius) {
+        if (type === 'core') return new THREE.IcosahedronGeometry(radius, 3);
+        if (type === 'section') return new THREE.OctahedronGeometry(radius, 2);
+        if (type === 'image') return new THREE.BoxGeometry(radius * 1.6, radius * 1.15, radius * 0.45);
+        if (type === 'evidence' || type === 'data') return new THREE.OctahedronGeometry(radius, 1);
+        if (type === 'reference') return new THREE.TetrahedronGeometry(radius * 1.15, 1);
+        return new THREE.SphereGeometry(radius, 24, 24);
+      }
+
+      function rebuildSceneGraph() {
+        while (nodesGroup.children.length > 0) {
+          nodesGroup.remove(nodesGroup.children[0]);
+        }
+        while (edgesGroup.children.length > 0) {
+          edgesGroup.remove(edgesGroup.children[0]);
+        }
+        labelsLayer.innerHTML = '';
+        nodeObjectsMap.clear();
+        edgeObjectsList.length = 0;
+
+        const filterValue = document.getElementById('filter-category') ? document.getElementById('filter-category').value : 'all';
+
+        graphData.nodes.forEach(node => {
+          const visible = isNodeVisible(node);
+          const style = TYPE_STYLE[node.type] || TYPE_STYLE.concept;
+
+          const geo = createGeometryForType(node.type, style.radius);
+          const mat = new THREE.MeshStandardMaterial({
+            color: style.color,
+            emissive: style.emissive,
+            emissiveIntensity: node.type === 'core' ? 0.75 : 0.45,
+            roughness: 0.25,
+            metalness: 0.35,
+            transparent: true,
+            opacity: 1
+          });
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(node.x || 0, node.y || 0, node.z || 0);
+          mesh.userData = { nodeId: node.id };
+          mesh.visible = visible;
+
+          const childCount = getChildrenCount(node.id);
+          let halo = null;
+          if (node.type === 'core' || node.type === 'section' || childCount > 0) {
+            const haloGeo = new THREE.RingGeometry(style.radius * 1.25, style.radius * 1.42, 32);
+            const haloMat = new THREE.MeshBasicMaterial({
+              color: style.color,
+              side: THREE.DoubleSide,
+              transparent: true,
+              opacity: node.expanded === false ? 0.75 : 0.28
+            });
+            halo = new THREE.Mesh(haloGeo, haloMat);
+            mesh.add(halo);
+          }
+
+          nodesGroup.add(mesh);
+
+          const domEl = document.createElement('div');
+          domEl.className = 'node-floating-tag rounded-2xl transition-all';
+          domEl.dataset.nodeId = node.id;
+
+          if (node.type === 'image' && node.imageUrl) {
+            domEl.className += ' glass-panel p-2 w-44 sm:w-52 border border-pink-400/50 shadow-xl';
+            domEl.innerHTML = `
+              <div class="relative rounded-xl overflow-hidden bg-slate-950 mb-1.5 border border-slate-800">
+                <img src="${node.imageUrl}" alt="${node.titleAr}" class="w-full h-20 object-contain pointer-events-none" />
+                <span class="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-pink-500/80 text-white font-bold">🖼️ صورة علمية</span>
+              </div>
+              <div class="text-[11px] font-bold text-white leading-tight line-clamp-2">${node.titleAr}</div>
+              <div class="flex items-center justify-between mt-1.5 pt-1 border-t border-slate-800/80 text-[10px]">
+                <button type="button" data-action="zoom-image" data-node-id="${node.id}" class="text-cyan-300 hover:text-white font-semibold">🔍 تكبير وشرح</button>
+                <button type="button" data-action="start-link" data-node-id="${node.id}" title="اسحب رابطاً من هذه العقدة" class="text-fuchsia-300 hover:text-white px-1">🔗 ربط</button>
+              </div>
+            `;
+          } else {
+            const isCore = node.type === 'core';
+            const isSection = node.type === 'section';
+            const sizeClasses = isCore
+              ? 'px-3.5 py-2 text-xs sm:text-sm font-extrabold border-cyan-400/70 bg-slate-950/90'
+              : isSection
+                ? 'px-3 py-1.5 text-xs font-bold border-cyan-400/40 bg-slate-900/90'
+                : 'px-2.5 py-1 text-[11px] font-semibold border-slate-700/80 bg-slate-900/80';
+
+            const branchIndicator = childCount > 0
+              ? `<span data-action="toggle-branch" data-node-id="${node.id}" title="فتح أو طي الفروع (${childCount})" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${node.expanded === false ? 'bg-amber-500/30 text-amber-200 border border-amber-400/50' : 'bg-cyan-500/20 text-cyan-200'} hover:scale-110 transition">${node.expanded === false ? '+' + childCount : '−'}</span>`
+              : '';
+
+            domEl.className += ` glass-pill ${sizeClasses} flex items-center gap-1.5 max-w-[210px] sm:max-w-[240px]`;
+            domEl.innerHTML = `
+              <span class="shrink-0">${style.icon}</span>
+              <span class="truncate text-slate-100">${node.titleAr}</span>
+              ${branchIndicator}
+            `;
+          }
+
+          if (!visible) {
+            domEl.style.display = 'none';
+          }
+
+          if (filterValue !== 'all' && node.type !== 'core') {
+            const match = (filterValue === 'evidence' && (node.type === 'evidence' || node.type === 'data')) || node.type === filterValue;
+            if (!match) {
+              domEl.classList.add('dimmed');
+              mat.opacity = 0.2;
+            }
+          }
+
+          domEl.addEventListener('pointerdown', (e) => onFloatingCardPointerDown(e, node.id));
+          domEl.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            openContextMenu(node.id, e.clientX, e.clientY);
+          });
+
+          labelsLayer.appendChild(domEl);
+
+          nodeObjectsMap.set(node.id, {
+            mesh,
+            halo,
+            domEl,
+            data: node,
+            targetPos: new THREE.Vector3(node.x || 0, node.y || 0, node.z || 0)
+          });
+        });
+
+        graphData.nodes.forEach(node => {
+          if (!node.parentId) return;
+          create3DEdge(node.parentId, node.id, true, { id: `hier-${node.parentId}-${node.id}`, label: 'يتفرع إلى', isHierarchical: true });
+        });
+
+        graphData.links.forEach(link => {
+          create3DEdge(link.source, link.target, false, link);
+        });
+
+        updateHUDStats();
+        applyKnowledgePathHighlight(selectedNodeId);
+      }
+
+      function create3DEdge(sourceId, targetId, isHierarchical, linkData) {
+        const srcObj = nodeObjectsMap.get(sourceId);
+        const tgtObj = nodeObjectsMap.get(targetId);
+        if (!srcObj || !tgtObj) return;
+
+        const visible = isNodeVisible(srcObj.data) && isNodeVisible(tgtObj.data);
+
+        const curve = getCurveBetween(srcObj.mesh.position, tgtObj.mesh.position, isHierarchical);
+        const points = curve.getPoints(28);
+        const geo = new THREE.BufferGeometry().setFromPoints(points);
+
+        const color = isHierarchical
+          ? 0x06b6d4
+          : (linkData && linkData.isChain ? 0xec4899 : 0xa855f7);
+
+        const mat = new THREE.LineBasicMaterial({
+          color: color,
+          transparent: true,
+          opacity: isHierarchical ? 0.42 : 0.58
+        });
+
+        const line = new THREE.Line(geo, mat);
+        line.visible = visible;
+        edgesGroup.add(line);
+
+        const pulseGeo = new THREE.SphereGeometry(0.32, 8, 8);
+        const pulseMat = new THREE.MeshBasicMaterial({
+          color: isHierarchical ? 0x38bdf8 : 0xf472b6,
+          transparent: true,
+          opacity: 0.85
+        });
+        const pulseMesh = new THREE.Mesh(pulseGeo, pulseMat);
+        pulseMesh.visible = visible && !reducedMotion;
+        edgesGroup.add(pulseMesh);
+
+        edgeObjectsList.push({
+          line,
+          pulseMesh,
+          curve,
+          sourceId,
+          targetId,
+          isHierarchical,
+          linkData,
+          pulseOffset: Math.random()
+        });
+      }
+
+      function getCurveBetween(posA, posB, isHierarchical) {
+        const mid = new THREE.Vector3().addVectors(posA, posB).multiplyScalar(0.5);
+        const dist = posA.distanceTo(posB);
+        const upOffset = isHierarchical ? dist * 0.12 : dist * 0.22;
+        mid.y += upOffset;
+        return new THREE.QuadraticBezierCurve3(posA.clone(), mid, posB.clone());
+      }
+
+      function updateEdgesForNode(nodeId) {
+        edgeObjectsList.forEach(edge => {
+          if (edge.sourceId === nodeId || edge.targetId === nodeId) {
+            const srcObj = nodeObjectsMap.get(edge.sourceId);
+            const tgtObj = nodeObjectsMap.get(edge.targetId);
+            if (!srcObj || !tgtObj) return;
+            edge.curve = getCurveBetween(srcObj.mesh.position, tgtObj.mesh.position, edge.isHierarchical);
+            const pts = edge.curve.getPoints(28);
+            edge.line.geometry.setFromPoints(pts);
+          }
+        });
+      }
+
+      // =========================================================================
+      // 5. KNOWLEDGE PATH ILLUMINATION
+      // =========================================================================
+      function getConnectedPathSet(focusId) {
+        const activeIds = new Set();
+        if (!focusId) return activeIds;
+        activeIds.add(focusId);
+
+        let curr = graphData.nodes.find(n => n.id === focusId);
+        while (curr && curr.parentId) {
+          activeIds.add(curr.parentId);
+          curr = graphData.nodes.find(n => n.id === curr.parentId);
+        }
+
+        graphData.nodes.forEach(n => {
+          if (n.parentId === focusId) activeIds.add(n.id);
+        });
+
+        graphData.links.forEach(l => {
+          if (l.source === focusId) activeIds.add(l.target);
+          if (l.target === focusId) activeIds.add(l.source);
+        });
+
+        const focusNode = graphData.nodes.find(n => n.id === focusId);
+        if (focusNode && focusNode.chainId) {
+          graphData.nodes.forEach(n => {
+            if (n.chainId === focusNode.chainId) activeIds.add(n.id);
+          });
+        }
+
+        return activeIds;
+      }
+
+      function applyKnowledgePathHighlight(focusId) {
+        const filterValue = document.getElementById('filter-category') ? document.getElementById('filter-category').value : 'all';
+
+        if (!focusId || (focusId === 'core' && filterValue === 'all')) {
+          nodeObjectsMap.forEach((obj, id) => {
+            obj.mesh.material.opacity = 1;
+            obj.mesh.material.emissiveIntensity = obj.data.type === 'core' ? 0.75 : 0.45;
+            obj.domEl.classList.remove('dimmed', 'highlighted');
+            if (id === focusId) obj.domEl.classList.add('highlighted');
+          });
+          edgeObjectsList.forEach(edge => {
+            edge.line.material.opacity = edge.isHierarchical ? 0.42 : 0.58;
+            edge.pulseMesh.visible = edge.line.visible && !reducedMotion;
+          });
+          return;
+        }
+
+        const activeSet = getConnectedPathSet(focusId);
+
+        nodeObjectsMap.forEach((obj, id) => {
+          const inPath = activeSet.has(id);
+          obj.mesh.material.opacity = inPath ? 1.0 : 0.22;
+          obj.mesh.material.emissiveIntensity = id === focusId ? 0.95 : (inPath ? 0.6 : 0.15);
+          obj.domEl.classList.toggle('dimmed', !inPath);
+          obj.domEl.classList.toggle('highlighted', id === focusId);
+        });
+
+        edgeObjectsList.forEach(edge => {
+          const activeEdge = activeSet.has(edge.sourceId) && activeSet.has(edge.targetId);
+          edge.line.material.opacity = activeEdge ? 0.92 : 0.1;
+          edge.pulseMesh.visible = edge.line.visible && activeEdge && !reducedMotion;
+        });
+      }
+
+      // =========================================================================
+      // 6. CAMERA CONTROLLER & SMOOTH TRANSITIONS
+      // =========================================================================
+      const camState = {
+        target: new THREE.Vector3(0, 0, 0),
+        desiredTarget: new THREE.Vector3(0, 0, 0),
+        radius: 68,
+        desiredRadius: 68,
+        theta: 0.35,
+        desiredTheta: 0.35,
+        phi: 1.22,
+        desiredPhi: 1.22
+      };
+
+      function updateCameraFromSpherical(immediate) {
+        const lerpFactor = (immediate || reducedMotion) ? 1.0 : 0.085;
+        camState.target.lerp(camState.desiredTarget, lerpFactor);
+        camState.radius += (camState.desiredRadius - camState.radius) * lerpFactor;
+        camState.theta += (camState.desiredTheta - camState.theta) * lerpFactor;
+        camState.phi += (camState.desiredPhi - camState.phi) * lerpFactor;
+
+        camState.phi = Math.max(0.22, Math.min(Math.PI - 0.22, camState.phi));
+        camState.radius = Math.max(16, Math.min(165, camState.radius));
+
+        const sinPhiRadius = Math.sin(camState.phi) * camState.radius;
+        camera.position.x = camState.target.x + sinPhiRadius * Math.sin(camState.theta);
+        camera.position.y = camState.target.y + Math.cos(camState.phi) * camState.radius;
+        camera.position.z = camState.target.z + sinPhiRadius * Math.cos(camState.theta);
+        camera.lookAt(camState.target);
+      }
+
+      function focusCameraOnNode(nodeId, pushHistory = true) {
+        const obj = nodeObjectsMap.get(nodeId);
+        if (!obj) return;
+
+        if (pushHistory && selectedNodeId && selectedNodeId !== nodeId) {
+          navigationHistory.push({
+            nodeId: selectedNodeId,
+            target: camState.desiredTarget.clone(),
+            radius: camState.desiredRadius,
+            theta: camState.desiredTheta,
+            phi: camState.desiredPhi
+          });
+          updateBackButtonState();
+        }
+
+        const pos = obj.mesh.position;
+        camState.desiredTarget.set(pos.x, pos.y, pos.z);
+
+        if (nodeId === 'core') {
+          camState.desiredRadius = 68;
+        } else if (obj.data.type === 'section') {
+          camState.desiredRadius = 42;
+        } else {
+          camState.desiredRadius = 30;
+        }
+      }
+
+      function goBackToPreviousLevel() {
+        if (navigationHistory.length === 0) return;
+        const prev = navigationHistory.pop();
+        updateBackButtonState();
+
+        camState.desiredTarget.copy(prev.target);
+        camState.desiredRadius = prev.radius;
+        camState.desiredTheta = prev.theta;
+        camState.desiredPhi = prev.phi;
+
+        selectNode(prev.nodeId, false, false);
+        showToast('تمت العودة إلى المستوى والمنظور السابق ↩');
+      }
+
+      function updateBackButtonState() {
+        const btn = document.getElementById('btn-back-level');
+        if (btn) {
+          btn.disabled = navigationHistory.length === 0;
+        }
+      }
+
+      // =========================================================================
+      // 7. UNIFIED POINTER & MULTI-TOUCH INTERACTION ENGINE
+      // =========================================================================
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+      const dragPlane = new THREE.Plane();
+      const dragIntersectPoint = new THREE.Vector3();
+      const dragOffset = new THREE.Vector3();
+
+      const interaction = {
+        mode: 'IDLE',
+        activeNodeId: null,
+        pointerId: null,
+        startX: 0,
+        startY: 0,
+        lastX: 0,
+        lastY: 0,
+        longPressTimer: null,
+        longPressStart: 0,
+        hoverTargetNodeId: null,
+        activePointers: new Map(),
+        initialPinchDist: 0,
+        initialRadius: 68
+      };
+
+      function setPointerNDC(clientX, clientY) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      }
+
+      function hitTestNode(clientX, clientY) {
+        const el = document.elementFromPoint(clientX, clientY);
+        if (el) {
+          const card = el.closest('.node-floating-tag');
+          if (card && card.dataset.nodeId) {
+            return card.dataset.nodeId;
+          }
+        }
+        setPointerNDC(clientX, clientY);
+        raycaster.setFromCamera(pointerNDC, camera);
+        const visibleMeshes = [];
+        nodeObjectsMap.forEach(obj => {
+          if (obj.mesh.visible) visibleMeshes.push(obj.mesh);
+        });
+        const hits = raycaster.intersectObjects(visibleMeshes, false);
+        if (hits.length > 0 && hits[0].object.userData.nodeId) {
+          return hits[0].object.userData.nodeId;
+        }
+        return null;
+      }
+
+      function startLongPressTimer(nodeId, clientX, clientY) {
+        cancelLongPressTimer();
+        const ring = document.getElementById('longpress-ring');
+        const prog = document.getElementById('longpress-progress');
+        interaction.longPressStart = performance.now();
+
+        if (ring && prog) {
+          ring.style.left = clientX + 'px';
+          ring.style.top = clientY + 'px';
+          ring.style.display = 'block';
+          prog.style.strokeDashoffset = '176';
+        }
+
+        interaction.longPressTimer = setTimeout(() => {
+          if (ring) ring.style.display = 'none';
+          if (interaction.mode === 'NODE_PENDING' && interaction.activeNodeId === nodeId) {
+            interaction.mode = 'IDLE';
+            openContextMenu(nodeId, clientX, clientY);
+          }
+        }, 520);
+      }
+
+      function cancelLongPressTimer() {
+        if (interaction.longPressTimer) {
+          clearTimeout(interaction.longPressTimer);
+          interaction.longPressTimer = null;
+        }
+        const ring = document.getElementById('longpress-ring');
+        if (ring) ring.style.display = 'none';
+      }
+
+      function beginNodeInteraction(nodeId, clientX, clientY, pointerId, forceLinkDrag = false) {
+        hideContextMenu();
+        const obj = nodeObjectsMap.get(nodeId);
+        if (!obj) return;
+
+        if (isLinkMode && pendingLinkSourceId && pendingLinkSourceId !== nodeId && !forceLinkDrag) {
+          openLinkCreationModal(pendingLinkSourceId, nodeId);
+          return;
+        }
+
+        interaction.activeNodeId = nodeId;
+        interaction.pointerId = pointerId;
+        interaction.startX = clientX;
+        interaction.startY = clientY;
+        interaction.lastX = clientX;
+        interaction.lastY = clientY;
+
+        if (forceLinkDrag || isLinkMode) {
+          interaction.mode = 'LINK_DRAG';
+          pendingLinkSourceId = nodeId;
+          showLinkDragLine(clientX, clientY, clientX, clientY);
+          return;
+        }
+
+        interaction.mode = 'NODE_PENDING';
+
+        const camDir = new THREE.Vector3();
+        camera.getWorldDirection(camDir);
+        dragPlane.setFromNormalAndCoplanarPoint(camDir.negate(), obj.mesh.position);
+
+        setPointerNDC(clientX, clientY);
+        raycaster.setFromCamera(pointerNDC, camera);
+        if (raycaster.ray.intersectPlane(dragPlane, dragIntersectPoint)) {
+          dragOffset.subVectors(obj.mesh.position, dragIntersectPoint);
+        } else {
+          dragOffset.set(0, 0, 0);
+        }
+
+        startLongPressTimer(nodeId, clientX, clientY);
+      }
+
+      function onFloatingCardPointerDown(e, nodeId) {
+        const actionBtn = e.target.closest('[data-action]');
+        if (actionBtn) {
+          e.stopPropagation();
+          const action = actionBtn.dataset.action;
+          if (action === 'zoom-image') {
+            selectNode(nodeId, true, true);
+            openLightbox(nodeId);
+          } else if (action === 'start-link') {
+            beginNodeInteraction(nodeId, e.clientX, e.clientY, e.pointerId, true);
+          } else if (action === 'toggle-branch') {
+            toggleNodeBranches(nodeId);
+          }
+          return;
+        }
+
+        e.stopPropagation();
+        if (e.button === 2) return;
+        beginNodeInteraction(nodeId, e.clientX, e.clientY, e.pointerId, e.shiftKey);
+      }
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        hideContextMenu();
+        interaction.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (interaction.activePointers.size === 2) {
+          cancelLongPressTimer();
+          interaction.mode = 'PINCH';
+          const pts = Array.from(interaction.activePointers.values());
+          interaction.initialPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+          interaction.initialRadius = camState.desiredRadius;
+          interaction.lastX = (pts[0].x + pts[1].x) * 0.5;
+          interaction.lastY = (pts[0].y + pts[1].y) * 0.5;
+          return;
+        }
+
+        if (e.button === 2) return;
+
+        const hitNodeId = hitTestNode(e.clientX, e.clientY);
+        if (hitNodeId) {
+          beginNodeInteraction(hitNodeId, e.clientX, e.clientY, e.pointerId, e.shiftKey);
+        } else {
+          interaction.pointerId = e.pointerId;
+          interaction.startX = e.clientX;
+          interaction.startY = e.clientY;
+          interaction.lastX = e.clientX;
+          interaction.lastY = e.clientY;
+          interaction.mode = (isPanMode || e.ctrlKey || e.button === 1) ? 'PAN' : 'ORBIT';
+        }
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (interaction.activePointers.has(e.pointerId)) {
+          interaction.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        }
+
+        if (interaction.mode === 'PINCH' && interaction.activePointers.size === 2) {
+          const pts = Array.from(interaction.activePointers.values());
+          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+          if (interaction.initialPinchDist > 10) {
+            const scale = interaction.initialPinchDist / Math.max(20, dist);
+            camState.desiredRadius = Math.max(18, Math.min(160, interaction.initialRadius * scale));
+          }
+          const midX = (pts[0].x + pts[1].x) * 0.5;
+          const midY = (pts[0].y + pts[1].y) * 0.5;
+          const dx = midX - interaction.lastX;
+          const dy = midY - interaction.lastY;
+          panCameraByScreenDelta(dx, dy);
+          interaction.lastX = midX;
+          interaction.lastY = midY;
+          return;
+        }
+
+        if (interaction.mode === 'IDLE') return;
+
+        const moveDist = Math.hypot(e.clientX - interaction.startX, e.clientY - interaction.startY);
+
+        if (interaction.mode === 'NODE_PENDING') {
+          if (moveDist > 7) {
+            cancelLongPressTimer();
+            interaction.mode = 'NODE_DRAG';
+          }
+        }
+
+        if (interaction.mode === 'NODE_DRAG' && interaction.activeNodeId) {
+          const obj = nodeObjectsMap.get(interaction.activeNodeId);
+          if (obj) {
+            setPointerNDC(e.clientX, e.clientY);
+            raycaster.setFromCamera(pointerNDC, camera);
+            if (raycaster.ray.intersectPlane(dragPlane, dragIntersectPoint)) {
+              const newPos = dragIntersectPoint.add(dragOffset);
+              obj.mesh.position.copy(newPos);
+              obj.targetPos.copy(newPos);
+              obj.data.x = Math.round(newPos.x * 100) / 100;
+              obj.data.y = Math.round(newPos.y * 100) / 100;
+              obj.data.z = Math.round(newPos.z * 100) / 100;
+
+              if (obj.data.id === 'core') {
+                coreRingsGroup.position.copy(newPos);
+              }
+              updateEdgesForNode(interaction.activeNodeId);
+            }
+          }
+          return;
+        }
+
+        if (interaction.mode === 'LINK_DRAG' && interaction.activeNodeId) {
+          const srcObj = nodeObjectsMap.get(interaction.activeNodeId);
+          const srcScreen = srcObj ? projectToScreen(srcObj.mesh.position) : { x: interaction.startX, y: interaction.startY };
+          showLinkDragLine(srcScreen.x, srcScreen.y, e.clientX, e.clientY);
+
+          const targetId = hitTestNode(e.clientX, e.clientY);
+          nodeObjectsMap.forEach((o, id) => {
+            o.domEl.classList.toggle('link-target-hover', id === targetId && id !== interaction.activeNodeId);
+          });
+          interaction.hoverTargetNodeId = (targetId && targetId !== interaction.activeNodeId) ? targetId : null;
+          return;
+        }
+
+        if (interaction.mode === 'ORBIT') {
+          const dx = e.clientX - interaction.lastX;
+          const dy = e.clientY - interaction.lastY;
+          camState.desiredTheta -= dx * 0.0065;
+          camState.desiredPhi -= dy * 0.0065;
+          interaction.lastX = e.clientX;
+          interaction.lastY = e.clientY;
+        } else if (interaction.mode === 'PAN') {
+          const dx = e.clientX - interaction.lastX;
+          const dy = e.clientY - interaction.lastY;
+          panCameraByScreenDelta(dx, dy);
+          interaction.lastX = e.clientX;
+          interaction.lastY = e.clientY;
+        }
+      });
+
+      function handlePointerEnd(e) {
+        interaction.activePointers.delete(e.pointerId);
+        cancelLongPressTimer();
+
+        if (interaction.mode === 'NODE_PENDING' && interaction.activeNodeId) {
+          const clickedId = interaction.activeNodeId;
+          interaction.mode = 'IDLE';
+          interaction.activeNodeId = null;
+          selectNode(clickedId, true, true);
+          return;
+        }
+
+        if (interaction.mode === 'NODE_DRAG' && interaction.activeNodeId) {
+          saveStateToStorage();
+          showToast('تم تحديث موضع العقدة وحفظه محلياً ✓');
+          interaction.mode = 'IDLE';
+          interaction.activeNodeId = null;
+          return;
+        }
+
+        if (interaction.mode === 'LINK_DRAG') {
+          hideLinkDragLine();
+          nodeObjectsMap.forEach(o => o.domEl.classList.remove('link-target-hover'));
+          if (interaction.activeNodeId && interaction.hoverTargetNodeId) {
+            openLinkCreationModal(interaction.activeNodeId, interaction.hoverTargetNodeId);
+          }
+          interaction.mode = 'IDLE';
+          interaction.activeNodeId = null;
+          interaction.hoverTargetNodeId = null;
+          return;
+        }
+
+        if (interaction.mode === 'ORBIT' || interaction.mode === 'PAN') {
+          const moveDist = Math.hypot(e.clientX - interaction.startX, e.clientY - interaction.startY);
+          if (moveDist < 5 && !isLinkMode) {
+            applyKnowledgePathHighlight('core');
+          }
+        }
+
+        if (interaction.activePointers.size === 0) {
+          interaction.mode = 'IDLE';
+          interaction.activeNodeId = null;
+        }
+      }
+
+      window.addEventListener('pointerup', handlePointerEnd);
+      window.addEventListener('pointercancel', handlePointerEnd);
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.desiredRadius = Math.max(16, Math.min(165, camState.desiredRadius + e.deltaY * 0.045));
+      }, { passive: false });
+
+      renderer.domElement.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const hitId = hitTestNode(e.clientX, e.clientY);
+        if (hitId) {
+          openContextMenu(hitId, e.clientX, e.clientY);
+        }
+      });
+
+      function panCameraByScreenDelta(dx, dy) {
+        const right = new THREE.Vector3();
+        const up = new THREE.Vector3();
+        camera.matrix.extractBasis(right, up, new THREE.Vector3());
+        const factor = camState.radius * 0.0014;
+        camState.desiredTarget.addScaledVector(right, -dx * factor);
+        camState.desiredTarget.addScaledVector(up, dy * factor);
+      }
+
+      function showLinkDragLine(x1, y1, x2, y2) {
+        const svg = document.getElementById('link-drag-svg');
+        const line = document.getElementById('link-drag-line');
+        const endCircle = document.getElementById('link-drag-end');
+        if (!svg || !line || !endCircle) return;
+        svg.classList.remove('hidden');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        endCircle.setAttribute('cx', x2);
+        endCircle.setAttribute('cy', y2);
+      }
+
+      function hideLinkDragLine() {
+        const svg = document.getElementById('link-drag-svg');
+        if (svg) svg.classList.add('hidden');
+      }
+
+      // =========================================================================
+      // 8. NODE SELECTION, EXPANSION, INSPECTOR PANEL & BREADCRUMBS
+      // =========================================================================
+      function selectNode(nodeId, flyCamera = true, pushHistory = true) {
+        const node = graphData.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        let parent = node.parentId ? graphData.nodes.find(n => n.id === node.parentId) : null;
+        let neededRebuild = false;
+        while (parent) {
+          if (parent.expanded === false) {
+            parent.expanded = true;
+            neededRebuild = true;
+          }
+          parent = parent.parentId ? graphData.nodes.find(n => n.id === parent.parentId) : null;
+        }
+        if (neededRebuild) {
+          rebuildSceneGraph();
+        }
+
+        if (flyCamera) {
+          focusCameraOnNode(nodeId, pushHistory);
+        }
+
+        selectedNodeId = nodeId;
+        applyKnowledgePathHighlight(nodeId);
+        renderInspectorPanel(node);
+        renderBreadcrumbs(node);
+
+        if (node.chainId) {
+          const chainIdx = GUIDED_CHAINS.findIndex(c => c.id === node.chainId);
+          if (chainIdx !== -1) {
+            activeChainIndex = chainIdx;
+            renderPathwayStepper();
+          }
+        }
+      }
+
+      function toggleNodeBranches(nodeId) {
+        const node = graphData.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+        const children = graphData.nodes.filter(n => n.parentId === nodeId);
+        if (children.length === 0) {
+          showToast('لا توجد فروع فرعية حالياً — يمكنك إضافة فرع جديد عبر زر «🌱 إضافة فرع»');
+          return;
+        }
+
+        node.expanded = node.expanded === false ? true : false;
+
+        if (node.expanded && !reducedMotion) {
+          children.forEach(ch => {
+            const chObj = nodeObjectsMap.get(ch.id);
+            if (chObj) {
+              chObj.mesh.position.set(node.x, node.y, node.z);
+            }
+          });
+        }
+
+        rebuildSceneGraph();
+        if (node.expanded && !reducedMotion) {
+          children.forEach(ch => {
+            const chObj = nodeObjectsMap.get(ch.id);
+            if (chObj) {
+              chObj.mesh.position.set(node.x, node.y, node.z);
+              chObj.targetPos.set(ch.x, ch.y, ch.z);
+            }
+          });
+        }
+
+        saveStateToStorage();
+        renderInspectorPanel(graphData.nodes.find(n => n.id === selectedNodeId) || node);
+        showToast(node.expanded ? `تم فتح فروع «${node.titleAr}»` : `تم طي فروع «${node.titleAr}»`);
+      }
+
+      function renderBreadcrumbs(node) {
+        const bar = document.getElementById('breadcrumb-bar');
+        if (!bar) return;
+
+        const trail = [];
+        let curr = node;
+        while (curr) {
+          trail.unshift(curr);
+          curr = curr.parentId ? graphData.nodes.find(n => n.id === curr.parentId) : null;
+        }
+
+        bar.innerHTML = trail.map((item, idx) => {
+          const isLast = idx === trail.length - 1;
+          return `
+            <button type="button" data-crumb-id="${item.id}" class="hover:text-cyan-300 transition ${isLast ? 'text-cyan-300 font-bold' : 'text-slate-300'} truncate max-w-[150px]">
+              ${item.titleAr}
+            </button>
+            ${!isLast ? '<span class="text-slate-500">‹</span>' : ''}
+          `;
+        }).join('');
+
+        bar.querySelectorAll('[data-crumb-id]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            selectNode(btn.dataset.crumbId, true, true);
+          });
+        });
+      }
+
+      function renderInspectorPanel(node) {
+        const style = TYPE_STYLE[node.type] || TYPE_STYLE.concept;
+        const badgeEl = document.getElementById('panel-node-badge');
+        const provBadgeEl = document.getElementById('panel-provenance-badge');
+        const titleArEl = document.getElementById('panel-title-ar');
+        const titleEnEl = document.getElementById('panel-title-en');
+        const provDescEl = document.getElementById('panel-provenance-desc');
+        const summaryEl = document.getElementById('panel-summary');
+        const detailsEl = document.getElementById('panel-details');
+
+        badgeEl.textContent = `${style.icon} ${style.labelAr}`;
+        provBadgeEl.textContent = node.provenance || 'إطار مفاهيمي';
+        titleArEl.textContent = node.titleAr;
+        titleEnEl.textContent = node.titleEn || '';
+        summaryEl.textContent = node.summary || '';
+        detailsEl.innerHTML = (node.details || 'لا توجد تفاصيل إضافية مسجلة.').split('\n').map(p => `<p>${p}</p>`).join('');
+
+        const provBox = document.getElementById('panel-provenance-box');
+        if (node.provenance && node.provenance.includes('بيانات تجريبية')) {
+          provBox.className = 'rounded-xl p-2.5 bg-amber-950/50 border border-amber-500/40 text-xs text-amber-200 flex items-start gap-2';
+          provDescEl.innerHTML = '<b>تمييز منهجي:</b> هذه العقدة تتضمن <b>بيانات تجريبية محاكاة (Sandbox Data)</b> لأغراض النموذج التفاعلي وتجربة أدوات القياس، وليست نتائج دراسة ميدانية منشورة.';
+        } else if (node.provenance && node.provenance.includes('مرجع علمي موثق')) {
+          provBox.className = 'rounded-xl p-2.5 bg-emerald-950/50 border border-emerald-500/40 text-xs text-emerald-200 flex items-start gap-2';
+          provDescEl.innerHTML = '<b>مرجع أكاديمي حقيقي موثق:</b> مصدر علمي منشور ومعتمد دولياً في أدبيات الذكاء الاصطناعي والتعليم.';
+        } else if (node.provenance && node.provenance.includes('مثال توضيحي')) {
+          provBox.className = 'rounded-xl p-2.5 bg-sky-950/50 border border-sky-500/40 text-xs text-sky-200 flex items-start gap-2';
+          provDescEl.innerHTML = '<b>مثال توضيحي تعليمي:</b> نموذج بصري أو تطبيقي مبسّط لشرح الآليات والعلاقات المفاهيمية.';
+        } else {
+          provBox.className = 'rounded-xl p-2.5 bg-slate-900/90 border border-slate-700/80 text-xs text-slate-300 flex items-start gap-2';
+          provDescEl.innerHTML = '<b>إطار مفاهيمي ومنهجي:</b> يحدد البنية النظرية والفروض البحثية للمشروع.';
+        }
+
+        const imgCard = document.getElementById('panel-image-card');
+        const imgPrev = document.getElementById('panel-image-preview');
+        const imgCap = document.getElementById('panel-image-caption');
+        if (node.imageUrl) {
+          imgCard.classList.remove('hidden');
+          imgPrev.src = node.imageUrl;
+          imgCap.textContent = node.imageSource || 'بطاقة علمية قابلة للتكبير والاستكشاف';
+        } else {
+          imgCard.classList.add('hidden');
+        }
+
+        const metricsSec = document.getElementById('panel-metrics-section');
+        const metricsGrid = document.getElementById('panel-metrics-grid');
+        if (Array.isArray(node.metrics) && node.metrics.length > 0) {
+          metricsSec.classList.remove('hidden');
+          metricsGrid.innerHTML = node.metrics.map(m => `
+            <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+              <div class="text-[11px] text-slate-400">${m.label}</div>
+              <div class="text-xs sm:text-sm font-extrabold text-emerald-300 mt-0.5">${m.value}</div>
+            </div>
+          `).join('');
+        } else {
+          metricsSec.classList.add('hidden');
+        }
+
+        const chainSec = document.getElementById('panel-chain-section');
+        const chainBtns = document.getElementById('panel-chain-buttons');
+        const chainObj = node.chainId ? GUIDED_CHAINS.find(c => c.id === node.chainId) : null;
+        if (chainObj) {
+          chainSec.classList.remove('hidden');
+          chainBtns.innerHTML = chainObj.steps.map((st, idx) => {
+            const isCurrent = st.nodeId === node.id;
+            return `
+              <button type="button" data-chain-jump="${st.nodeId}" class="p-2 rounded-xl text-right text-xs border transition flex items-center gap-1.5 ${isCurrent ? 'bg-cyan-500/25 border-cyan-400 text-white font-bold' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-cyan-500/40'}">
+                <span>${st.icon}</span>
+                <span class="truncate">${idx + 1}. ${st.role}</span>
+              </button>
+            `;
+          }).join('');
+
+          chainBtns.querySelectorAll('[data-chain-jump]').forEach(b => {
+            b.addEventListener('click', () => {
+              const targetId = b.dataset.chainJump;
+              selectNode(targetId, true, true);
+              document.getElementById('pathway-bar').classList.remove('hidden');
+            });
+          });
+        } else {
+          chainSec.classList.add('hidden');
+        }
+
+        const connList = document.getElementById('panel-connections-list');
+        const connCount = document.getElementById('panel-connections-count');
+        const connections = [];
+
+        if (node.parentId) {
+          const p = graphData.nodes.find(n => n.id === node.parentId);
+          if (p) connections.push({ node: p, relation: 'يتبع لـ', linkId: null });
+        }
+        graphData.nodes.filter(n => n.parentId === node.id).forEach(ch => {
+          connections.push({ node: ch, relation: 'فرع', linkId: null });
+        });
+        graphData.links.forEach(l => {
+          if (l.source === node.id) {
+            const t = graphData.nodes.find(n => n.id === l.target);
+            if (t) connections.push({ node: t, relation: l.label || 'يرتبط بـ', linkId: l.id });
+          } else if (l.target === node.id) {
+            const s = graphData.nodes.find(n => n.id === l.source);
+            if (s) connections.push({ node: s, relation: l.label || 'مرتبط من', linkId: l.id });
+          }
+        });
+
+        connCount.textContent = String(connections.length);
+        connList.innerHTML = connections.map(item => `
+          <div class="inline-flex items-center gap-1 rounded-xl bg-slate-900/90 border border-slate-700/80 px-2.5 py-1 text-[11px] hover:border-cyan-400/50 transition">
+            <button type="button" data-conn-id="${item.node.id}" class="text-slate-200 hover:text-cyan-300 font-medium flex items-center gap-1">
+              <span class="text-[10px] text-cyan-400">(${item.relation})</span>
+              <span class="truncate max-w-[140px]">${item.node.titleAr}</span>
+            </button>
+            ${item.linkId ? `<button type="button" data-del-link="${item.linkId}" title="حذف هذا الرابط" class="text-rose-400 hover:text-rose-200 pr-1 font-bold">×</button>` : ''}
+          </div>
+        `).join('');
+
+        connList.querySelectorAll('[data-conn-id]').forEach(btn => {
+          btn.addEventListener('click', () => selectNode(btn.dataset.connId, true, true));
+        });
+        connList.querySelectorAll('[data-del-link]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteSemanticLink(btn.dataset.delLink);
+          });
+        });
+
+        const delBtn = document.getElementById('btn-panel-delete');
+        if (delBtn) {
+          delBtn.disabled = node.id === 'core';
+          delBtn.classList.toggle('opacity-40', node.id === 'core');
+        }
+      }
+
+      // =========================================================================
+      // 9. GUIDED KNOWLEDGE PATHWAY STEPPER
+      // =========================================================================
+      function renderPathwayStepper() {
+        const chain = GUIDED_CHAINS[activeChainIndex] || GUIDED_CHAINS[0];
+        const titleEl = document.getElementById('pathway-chain-title');
+        const containerEl = document.getElementById('pathway-steps-container');
+        if (!titleEl || !containerEl) return;
+
+        titleEl.textContent = chain.title;
+        containerEl.innerHTML = chain.steps.map((st, idx) => {
+          const n = graphData.nodes.find(item => item.id === st.nodeId);
+          const isSelected = selectedNodeId === st.nodeId;
+          return `
+            <button type="button" data-step-node="${st.nodeId}" class="p-2 rounded-xl text-right border transition flex flex-col justify-between ${isSelected ? 'bg-gradient-to-br from-cyan-500/30 to-violet-600/30 border-cyan-400 text-white shadow-lg' : 'bg-slate-900/85 border-slate-800 text-slate-300 hover:border-cyan-400/40'}">
+              <div class="flex items-center justify-between text-[10px] text-cyan-300 font-bold">
+                <span>${idx + 1}. ${st.role}</span>
+                <span>${st.icon}</span>
+              </div>
+              <div class="text-[11px] font-bold truncate mt-1">${n ? n.titleAr : st.role}</div>
+            </button>
+          `;
+        }).join('');
+
+        containerEl.querySelectorAll('[data-step-node]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const targetId = btn.dataset.stepNode;
+            selectNode(targetId, true, true);
+          });
+        });
+      }
+
+      // =========================================================================
+      // 10. SCIENTIFIC IMAGE LIGHTBOX VIEWER
+      // =========================================================================
+      function openLightbox(nodeId) {
+        let node = graphData.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        if (!node.imageUrl && node.chainId) {
+          const chainImg = graphData.nodes.find(n => n.chainId === node.chainId && n.imageUrl);
+          if (chainImg) node = chainImg;
+        } else if (!node.imageUrl) {
+          node = graphData.nodes.find(n => n.type === 'image' && n.imageUrl) || node;
+        }
+
+        const modal = document.getElementById('lightbox-modal');
+        const img = document.getElementById('lightbox-img');
+        const title = document.getElementById('lightbox-title');
+        const prov = document.getElementById('lightbox-provenance');
+        const exp = document.getElementById('lightbox-explanation');
+        const src = document.getElementById('lightbox-source');
+        const linksBox = document.getElementById('lightbox-chain-links');
+
+        lightboxZoom = 1;
+        img.style.transform = 'scale(1)';
+        img.src = node.imageUrl || SCIENTIFIC_SVGS.adaptiveArchitecture;
+        title.textContent = node.titleAr;
+        prov.textContent = node.provenance || 'مثال توضيحي تعليمي';
+        exp.textContent = (node.summary || '') + ' — ' + (node.details || '');
+        src.textContent = node.imageSource || 'مخطط علمي تفاعلي مدمج داخل العالم المعرفي.';
+
+        const chainObj = node.chainId ? GUIDED_CHAINS.find(c => c.id === node.chainId) : GUIDED_CHAINS[0];
+        linksBox.innerHTML = chainObj.steps.map((st, idx) => `
+          <button type="button" data-lb-jump="${st.nodeId}" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-500/30 transition flex items-center gap-1.5">
+            <span>${st.icon}</span>
+            <span>${idx + 1}. انتقل إلى ${st.role}</span>
+          </button>
+        `).join('');
+
+        linksBox.querySelectorAll('[data-lb-jump]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            document.getElementById('pathway-bar').classList.remove('hidden');
+            selectNode(btn.dataset.lbJump, true, true);
+          });
+        });
+
+        modal.classList.remove('hidden');
+      }
+
+      // =========================================================================
+      // 11. CRUD: ADD, EDIT, DELETE NODES & LINKS + AUTO-LAYOUT
+      // =========================================================================
+      function openNodeEditor(mode, targetNodeId) {
+        const modal = document.getElementById('node-editor-modal');
+        const modalTitle = document.getElementById('editor-modal-title');
+        const idInput = document.getElementById('edit-node-id');
+        const parentInput = document.getElementById('edit-parent-id');
+        const titleArInput = document.getElementById('edit-title-ar');
+        const titleEnInput = document.getElementById('edit-title-en');
+        const typeSelect = document.getElementById('edit-node-type');
+        const provSelect = document.getElementById('edit-node-provenance');
+        const summaryInput = document.getElementById('edit-node-summary');
+        const detailsInput = document.getElementById('edit-node-details');
+
+        if (mode === 'edit') {
+          const node = graphData.nodes.find(n => n.id === targetNodeId);
+          if (!node) return;
+          modalTitle.textContent = `تعديل العقدة: ${node.titleAr}`;
+          idInput.value = node.id;
+          parentInput.value = node.parentId || '';
+          titleArInput.value = node.titleAr || '';
+          titleEnInput.value = node.titleEn || '';
+          typeSelect.value = node.type === 'core' ? 'section' : (node.type || 'concept');
+          provSelect.value = node.provenance || 'إطار مفاهيمي ومنهجي';
+          summaryInput.value = node.summary || '';
+          detailsInput.value = node.details || '';
+        } else {
+          const parentNode = graphData.nodes.find(n => n.id === (targetNodeId || selectedNodeId || 'core')) || graphData.nodes[0];
+          modalTitle.textContent = `إضافة فرع معرفي جديد تحت «${parentNode.titleAr}»`;
+          idInput.value = '';
+          parentInput.value = parentNode.id;
+          titleArInput.value = '';
+          titleEnInput.value = '';
+          typeSelect.value = 'concept';
+          provSelect.value = 'إطار مفاهيمي ومنهجي';
+          summaryInput.value = '';
+          detailsInput.value = '';
+        }
+
+        modal.classList.remove('hidden');
+        titleArInput.focus();
+      }
+
+      function handleNodeEditorSubmit(e) {
+        e.preventDefault();
+        const idVal = document.getElementById('edit-node-id').value.trim();
+        const parentIdVal = document.getElementById('edit-parent-id').value.trim() || 'core';
+        const titleAr = document.getElementById('edit-title-ar').value.trim();
+        const titleEn = document.getElementById('edit-title-en').value.trim();
+        const type = document.getElementById('edit-node-type').value;
+        const provenance = document.getElementById('edit-node-provenance').value;
+        const summary = document.getElementById('edit-node-summary').value.trim();
+        const details = document.getElementById('edit-node-details').value.trim();
+
+        if (!titleAr || !summary) return;
+
+        if (idVal) {
+          const node = graphData.nodes.find(n => n.id === idVal);
+          if (node) {
+            node.titleAr = titleAr;
+            node.titleEn = titleEn;
+            if (node.id !== 'core') node.type = type;
+            node.provenance = provenance;
+            node.summary = summary;
+            node.details = details;
+            if (type === 'image' && !node.imageUrl) {
+              node.imageUrl = SCIENTIFIC_SVGS.adaptiveArchitecture;
+            }
+          }
+          rebuildSceneGraph();
+          saveStateToStorage();
+          selectNode(idVal, false, false);
+          showToast('تم حفظ تعديلات العقدة بنجاح ✓');
+        } else {
+          const parent = graphData.nodes.find(n => n.id === parentIdVal) || graphData.nodes[0];
+          parent.expanded = true;
+          const angle = Math.random() * Math.PI * 2;
+          const dist = 12 + Math.random() * 6;
+          const newId = 'node-' + Date.now();
+          const newNode = {
+            id: newId,
+            parentId: parent.id,
+            type: type,
+            titleAr: titleAr,
+            titleEn: titleEn || 'Custom Concept',
+            provenance: provenance,
+            expanded: true,
+            x: Math.round((parent.x + Math.cos(angle) * dist) * 10) / 10,
+            y: Math.round((parent.y + (Math.random() - 0.5) * 10) * 10) / 10,
+            z: Math.round((parent.z + Math.sin(angle) * dist) * 10) / 10,
+            summary: summary,
+            details: details
+          };
+          if (type === 'image') {
+            newNode.imageUrl = SCIENTIFIC_SVGS.adaptiveArchitecture;
+            newNode.imageSource = 'بطاقة علمية مضافة بواسطة المستخدم';
+          }
+          graphData.nodes.push(newNode);
+          rebuildSceneGraph();
+          saveStateToStorage();
+          selectNode(newId, true, true);
+          showToast(`تمت إضافة العقدة «${titleAr}» إلى العالم المعرفي ✓`);
+        }
+
+        document.getElementById('node-editor-modal').classList.add('hidden');
+      }
+
+      function deleteNodeById(nodeId) {
+        if (!nodeId || nodeId === 'core') {
+          showToast('لا يمكن حذف النواة المعرفية المركزية للبحث');
+          return;
+        }
+        const target = graphData.nodes.find(n => n.id === nodeId);
+        if (!target) return;
+
+        const toRemove = new Set([nodeId]);
+        let added = true;
+        while (added) {
+          added = false;
+          graphData.nodes.forEach(n => {
+            if (n.parentId && toRemove.has(n.parentId) && !toRemove.has(n.id)) {
+              toRemove.add(n.id);
+              added = true;
+            }
+          });
+        }
+
+        graphData.nodes = graphData.nodes.filter(n => !toRemove.has(n.id));
+        graphData.links = graphData.links.filter(l => !toRemove.has(l.source) && !toRemove.has(l.target));
+
+        const nextFocus = target.parentId || 'core';
+        rebuildSceneGraph();
+        saveStateToStorage();
+        selectNode(nextFocus, true, false);
+        showToast(`تم حذف «${target.titleAr}» وتحديث الروابط ✓`);
+      }
+
+      function openLinkCreationModal(sourceId, targetId) {
+        if (!sourceId || !targetId || sourceId === targetId) return;
+        const src = graphData.nodes.find(n => n.id === sourceId);
+        const tgt = graphData.nodes.find(n => n.id === targetId);
+        if (!src || !tgt) return;
+
+        document.getElementById('link-source-name').textContent = src.titleAr;
+        document.getElementById('link-target-name').textContent = tgt.titleAr;
+        const modal = document.getElementById('link-modal');
+        modal.dataset.sourceId = sourceId;
+        modal.dataset.targetId = targetId;
+        modal.classList.remove('hidden');
+      }
+
+      function confirmCreateLink() {
+        const modal = document.getElementById('link-modal');
+        const sourceId = modal.dataset.sourceId;
+        const targetId = modal.dataset.targetId;
+        const label = document.getElementById('link-relation-label').value;
+
+        if (sourceId && targetId && sourceId !== targetId) {
+          const exists = graphData.links.some(l =>
+            (l.source === sourceId && l.target === targetId) ||
+            (l.source === targetId && l.target === sourceId)
+          );
+          if (!exists) {
+            graphData.links.push({
+              id: 'lnk-' + Date.now(),
+              source: sourceId,
+              target: targetId,
+              label: label,
+              isChain: false
+            });
+            rebuildSceneGraph();
+            saveStateToStorage();
+            selectNode(sourceId, false, false);
+            showToast(`تم إنشاء رابط معرفي: «${label}» ✓`);
+          } else {
+            showToast('توجد علاقة معرفية مسجلة بالفعل بين هاتين العقدتين');
+          }
+        }
+        modal.classList.add('hidden');
+        setLinkMode(false);
+      }
+
+      function deleteSemanticLink(linkId) {
+        graphData.links = graphData.links.filter(l => l.id !== linkId);
+        rebuildSceneGraph();
+        saveStateToStorage();
+        const curr = graphData.nodes.find(n => n.id === selectedNodeId);
+        if (curr) renderInspectorPanel(curr);
+        showToast('تم حذف الرابط المعرفي ✓');
+      }
+
+      function setLinkMode(enabled, initialSourceId = null) {
+        isLinkMode = enabled;
+        pendingLinkSourceId = initialSourceId;
+        const btn = document.getElementById('btn-toggle-link-mode');
+        const banner = document.getElementById('link-mode-banner');
+        if (btn) {
+          btn.classList.toggle('bg-fuchsia-500/35', enabled);
+          btn.classList.toggle('border-fuchsia-400', enabled);
+        }
+        if (banner) {
+          banner.classList.toggle('hidden', !enabled);
+        }
+      }
+
+      function autoArrangeKnowledgeMap() {
+        const core = graphData.nodes.find(n => n.id === 'core');
+        if (core) {
+          core.x = 0; core.y = 0; core.z = 0;
+        }
+
+        const sections = graphData.nodes.filter(n => n.parentId === 'core');
+        const secRadius = 29;
+        sections.forEach((sec, idx) => {
+          const angle = (idx / Math.max(1, sections.length)) * Math.PI * 2;
+          const yWave = Math.sin(angle * 2) * 10;
+          sec.x = Math.round(Math.cos(angle) * secRadius * 10) / 10;
+          sec.y = Math.round(yWave * 10) / 10;
+          sec.z = Math.round(Math.sin(angle) * secRadius * 10) / 10;
+
+          const children = graphData.nodes.filter(n => n.parentId === sec.id);
+          const outDir = new THREE.Vector3(sec.x, sec.y, sec.z).normalize();
+          children.forEach((ch, cIdx) => {
+            const subAngle = ((cIdx / Math.max(1, children.length)) - 0.5) * 1.4;
+            const spreadRadius = 15;
+            const rotated = outDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), subAngle);
+            ch.x = Math.round((sec.x + rotated.x * spreadRadius) * 10) / 10;
+            ch.y = Math.round((sec.y + ((cIdx % 2 === 0 ? 1 : -1) * (5 + cIdx * 2.5))) * 10) / 10;
+            ch.z = Math.round((sec.z + rotated.z * spreadRadius) * 10) / 10;
+          });
+        });
+
+        nodeObjectsMap.forEach(obj => {
+          obj.targetPos.set(obj.data.x, obj.data.y, obj.data.z);
+          if (reducedMotion) {
+            obj.mesh.position.copy(obj.targetPos);
+          }
+        });
+
+        if (reducedMotion) {
+          rebuildSceneGraph();
+        }
+        saveStateToStorage();
+        showToast('تمت إعادة ترتيب الخريطة المعرفية تلقائياً في الفضاء ثلاثي الأبعاد ✨');
+      }
+
+      // =========================================================================
+      // 12. CONTEXT MENU
+      // =========================================================================
+      function openContextMenu(nodeId, clientX, clientY) {
+        const node = graphData.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+        contextMenuNodeId = nodeId;
+
+        const menu = document.getElementById('context-menu');
+        const title = document.getElementById('ctx-node-title');
+        title.textContent = node.titleAr;
+
+        const x = Math.min(window.innerWidth - 235, Math.max(12, clientX));
+        const y = Math.min(window.innerHeight - 265, Math.max(12, clientY));
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        menu.classList.remove('hidden');
+      }
+
+      function hideContextMenu() {
+        const menu = document.getElementById('context-menu');
+        if (menu) menu.classList.add('hidden');
+      }
+
+      // =========================================================================
+      // 13. SEARCH & CATEGORY FILTERING
+      // =========================================================================
+      function updateHUDStats() {
+        const statsEl = document.getElementById('hud-stats-count');
+        if (statsEl) {
+          statsEl.textContent = `${graphData.nodes.length} عقدة • ${graphData.links.length} رابط`;
+        }
+      }
+
+      function handleSearchInput() {
+        const input = document.getElementById('search-input');
+        const dropdown = document.getElementById('search-dropdown');
+        const clearBtn = document.getElementById('btn-clear-search');
+        const query = (input.value || '').trim().toLowerCase();
+
+        clearBtn.classList.toggle('hidden', query.length === 0);
+        if (!query) {
+          dropdown.classList.add('hidden');
+          return;
+        }
+
+        const matches = graphData.nodes.filter(n =>
+          (n.titleAr && n.titleAr.toLowerCase().includes(query)) ||
+          (n.titleEn && n.titleEn.toLowerCase().includes(query)) ||
+          (n.summary && n.summary.toLowerCase().includes(query))
+        );
+
+        dropdown.classList.remove('hidden');
+        if (matches.length === 0) {
+          dropdown.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">لا توجد عقد مطابقة لـ «${input.value}»</div>`;
+          return;
+        }
+
+        dropdown.innerHTML = matches.map(m => {
+          const st = TYPE_STYLE[m.type] || TYPE_STYLE.concept;
+          return `
+            <button type="button" data-search-id="${m.id}" class="w-full text-right p-2.5 hover:bg-cyan-500/15 rounded-xl transition flex items-center justify-between gap-2">
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-white truncate">${st.icon} ${m.titleAr}</div>
+                <div class="text-[11px] text-slate-400 truncate">${m.summary || ''}</div>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full border ${st.badgeBg} shrink-0">${st.labelAr}</span>
+            </button>
+          `;
+        }).join('');
+
+        dropdown.querySelectorAll('[data-search-id]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const targetId = btn.dataset.searchId;
+            dropdown.classList.add('hidden');
+            selectNode(targetId, true, true);
+          });
+        });
+      }
+
+      // =========================================================================
+      // 14. 3D PROJECTION LOOP & ANIMATION
+      // =========================================================================
+      const tempVec = new THREE.Vector3();
+
+      function projectToScreen(pos3D) {
+        tempVec.copy(pos3D);
+        tempVec.project(camera);
+        const halfW = window.innerWidth * 0.5;
+        const halfH = window.innerHeight * 0.5;
+        return {
+          x: (tempVec.x * halfW) + halfW,
+          y: -(tempVec.y * halfH) + halfH,
+          behind: tempVec.z > 1.0,
+          ndcZ: tempVec.z
+        };
+      }
+
+      let clockStart = performance.now();
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const elapsed = (now - clockStart) * 0.001;
+
+        updateCameraFromSpherical(false);
+
+        if (!reducedMotion) {
+          ringMesh1.rotation.z = elapsed * 0.22;
+          ringMesh2.rotation.z = -elapsed * 0.16;
+          particleSystem.rotation.y = elapsed * 0.015;
+        }
+
+        let anyNodeMoved = false;
+        nodeObjectsMap.forEach((obj) => {
+          if (!obj.mesh.visible) {
+            obj.domEl.style.display = 'none';
+            return;
+          }
+
+          if (interaction.mode !== 'NODE_DRAG' || interaction.activeNodeId !== obj.data.id) {
+            const distSq = obj.mesh.position.distanceToSquared(obj.targetPos);
+            if (distSq > 0.001) {
+              obj.mesh.position.lerp(obj.targetPos, reducedMotion ? 1.0 : 0.12);
+              obj.data.x = obj.mesh.position.x;
+              obj.data.y = obj.mesh.position.y;
+              obj.data.z = obj.mesh.position.z;
+              anyNodeMoved = true;
+            }
+          }
+
+          if (obj.halo) {
+            obj.halo.lookAt(camera.position);
+          }
+
+          const labelPos3D = obj.mesh.position.clone();
+          const style = TYPE_STYLE[obj.data.type] || TYPE_STYLE.concept;
+          labelPos3D.y += style.radius + (obj.data.type === 'image' ? 2.4 : 1.2);
+
+          const proj = projectToScreen(labelPos3D);
+          if (proj.behind || proj.x < -180 || proj.x > window.innerWidth + 180 || proj.y < -120 || proj.y > window.innerHeight + 120) {
+            obj.domEl.style.display = 'none';
+          } else {
+            obj.domEl.style.display = '';
+            const distToCam = camera.position.distanceTo(obj.mesh.position);
+            const scale = Math.max(0.68, Math.min(1.12, 52 / Math.max(22, distToCam)));
+            obj.domEl.style.transform = `translate3d(${Math.round(proj.x)}px, ${Math.round(proj.y)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})`;
+            obj.domEl.style.zIndex = String(Math.max(10, Math.min(29, Math.round(200 - distToCam))));
+          }
+        });
+
+        if (anyNodeMoved) {
+          edgeObjectsList.forEach(edge => {
+            const srcObj = nodeObjectsMap.get(edge.sourceId);
+            const tgtObj = nodeObjectsMap.get(edge.targetId);
+            if (srcObj && tgtObj) {
+              edge.curve = getCurveBetween(srcObj.mesh.position, tgtObj.mesh.position, edge.isHierarchical);
+              edge.line.geometry.setFromPoints(edge.curve.getPoints(24));
+            }
+          });
+        }
+
+        if (!reducedMotion) {
+          edgeObjectsList.forEach(edge => {
+            if (edge.pulseMesh.visible && edge.curve) {
+              const t = (elapsed * 0.28 + edge.pulseOffset) % 1;
+              const pt = edge.curve.getPoint(t);
+              edge.pulseMesh.position.copy(pt);
+            }
+          });
+        }
+
+        if (interaction.longPressTimer && interaction.mode === 'NODE_PENDING') {
+          const prog = document.getElementById('longpress-progress');
+          if (prog) {
+            const ratio = Math.min(1, (now - interaction.longPressStart) / 520);
+            prog.style.strokeDashoffset = String(Math.round(176 * (1 - ratio)));
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // 15. UI CONTROLS, LISTENERS & KEYBOARD SHORTCUTS
+      // =========================================================================
+      function bindUIEvents() {
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        document.getElementById('btn-focus-core').addEventListener('click', () => {
+          selectNode('core', true, true);
+        });
+
+        document.getElementById('btn-back-level').addEventListener('click', () => {
+          goBackToPreviousLevel();
+        });
+
+        document.getElementById('btn-guided-chain').addEventListener('click', () => {
+          const bar = document.getElementById('pathway-bar');
+          const wasHidden = bar.classList.contains('hidden');
+          bar.classList.toggle('hidden', !wasHidden);
+          if (wasHidden) {
+            renderPathwayStepper();
+            const chain = GUIDED_CHAINS[activeChainIndex] || GUIDED_CHAINS[0];
+            selectNode(chain.steps[0].nodeId, true, true);
+            showToast(`تم تفعيل المسار المتسلسل: ${chain.title}`);
+          }
+        });
+
+        document.getElementById('btn-switch-chain').addEventListener('click', () => {
+          activeChainIndex = (activeChainIndex + 1) % GUIDED_CHAINS.length;
+          renderPathwayStepper();
+          const chain = GUIDED_CHAINS[activeChainIndex];
+          selectNode(chain.steps[0].nodeId, true, true);
+          showToast(`انتقل المسار إلى: ${chain.title}`);
+        });
+
+        document.getElementById('btn-close-pathway').addEventListener('click', () => {
+          document.getElementById('pathway-bar').classList.add('hidden');
+        });
+
+        document.getElementById('btn-toggle-link-mode').addEventListener('click', () => {
+          setLinkMode(!isLinkMode, selectedNodeId);
+          if (isLinkMode) {
+            showToast('وضع الربط نشط: اسحب من أي عقدة إلى أخرى أو انقر عقدتين لربطهما 🔗');
+          }
+        });
+
+        document.getElementById('btn-cancel-link-mode').addEventListener('click', () => {
+          setLinkMode(false);
+        });
+
+        document.getElementById('btn-add-node-top').addEventListener('click', () => {
+          openNodeEditor('add', selectedNodeId || 'core');
+        });
+
+        document.getElementById('btn-auto-layout').addEventListener('click', () => {
+          autoArrangeKnowledgeMap();
+        });
+
+        document.getElementById('btn-reduced-motion').addEventListener('click', () => {
+          reducedMotion = !reducedMotion;
+          document.body.classList.toggle('reduced-motion', reducedMotion);
+          const btn = document.getElementById('btn-reduced-motion');
+          btn.classList.toggle('bg-violet-500/35', reducedMotion);
+          btn.classList.toggle('border-violet-400', reducedMotion);
+          applyKnowledgePathHighlight(selectedNodeId);
+          showToast(reducedMotion ? 'تم تفعيل وضع تقليل الحركة والانتقالات الهادئة ✓' : 'تم تفعيل الحركة الكاملة والجسيمات الضوئية ✨');
+        });
+
+        document.getElementById('btn-reset-scene').addEventListener('click', () => {
+          document.getElementById('reset-modal').classList.remove('hidden');
+        });
+
+        document.getElementById('btn-help-modal').addEventListener('click', () => {
+          document.getElementById('help-modal').classList.remove('hidden');
+        });
+
+        document.getElementById('search-input').addEventListener('input', handleSearchInput);
+        document.getElementById('search-input').addEventListener('focus', handleSearchInput);
+        document.getElementById('btn-clear-search').addEventListener('click', () => {
+          const inp = document.getElementById('search-input');
+          inp.value = '';
+          handleSearchInput();
+        });
+        document.getElementById('filter-category').addEventListener('change', () => {
+          rebuildSceneGraph();
+        });
+
+        let panelCollapsed = false;
+        document.getElementById('btn-collapse-panel').addEventListener('click', () => {
+          panelCollapsed = !panelCollapsed;
+          const body = document.getElementById('inspector-body');
+          const icon = document.getElementById('panel-collapse-icon');
+          body.classList.toggle('hidden', panelCollapsed);
+          icon.textContent = panelCollapsed ? '▲' : '▼';
+        });
+
+        document.getElementById('btn-open-lightbox-from-panel').addEventListener('click', () => {
+          openLightbox(selectedNodeId);
+        });
+
+        document.getElementById('btn-panel-toggle-branches').addEventListener('click', () => {
+          toggleNodeBranches(selectedNodeId);
+        });
+
+        document.getElementById('btn-panel-edit').addEventListener('click', () => {
+          openNodeEditor('edit', selectedNodeId);
+        });
+
+        document.getElementById('btn-panel-add-child').addEventListener('click', () => {
+          openNodeEditor('add', selectedNodeId);
+        });
+
+        document.getElementById('btn-panel-start-link').addEventListener('click', () => {
+          setLinkMode(true, selectedNodeId);
+          showToast('انقر الآن على أي عقدة أخرى في الفضاء لربطها بالعقدة الحالية 🔗');
+        });
+
+        document.getElementById('btn-panel-delete').addEventListener('click', () => {
+          deleteNodeById(selectedNodeId);
+        });
+
+        document.getElementById('btn-zoom-in').addEventListener('click', () => {
+          camState.desiredRadius = Math.max(16, camState.desiredRadius - 10);
+        });
+        document.getElementById('btn-zoom-out').addEventListener('click', () => {
+          camState.desiredRadius = Math.min(165, camState.desiredRadius + 10);
+        });
+        document.getElementById('btn-toggle-pan-mode').addEventListener('click', () => {
+          isPanMode = !isPanMode;
+          document.getElementById('pan-mode-icon').textContent = isPanMode ? '✋' : '🔄';
+          showToast(isPanMode ? 'وضع سحب الفضاء: تحريك أفقي وعمودي (Pan)' : 'وضع سحب الفضاء: دوران مداري ثلاثي الأبعاد (Orbit)');
+        });
+        let allExpanded = true;
+        document.getElementById('btn-expand-all').addEventListener('click', () => {
+          allExpanded = !allExpanded;
+          graphData.nodes.forEach(n => {
+            if (n.id !== 'core') n.expanded = allExpanded;
+          });
+          rebuildSceneGraph();
+          showToast(allExpanded ? 'تم فتح جميع الفروع المعرفية 🌿' : 'تم طي الفروع الفرعية للتركيز على الفصول الـ 8 الرئيسية');
+        });
+
+        document.getElementById('btn-ctx-close').addEventListener('click', hideContextMenu);
+        document.getElementById('btn-ctx-toggle-branch').addEventListener('click', () => {
+          const id = contextMenuNodeId;
+          hideContextMenu();
+          if (id) toggleNodeBranches(id);
+        });
+        document.getElementById('btn-ctx-start-link').addEventListener('click', () => {
+          const id = contextMenuNodeId;
+          hideContextMenu();
+          if (id) {
+            selectNode(id, false, false);
+            setLinkMode(true, id);
+            showToast('انقر على العقدة الهدف لإتمام الربط المعرفي 🔗');
+          }
+        });
+        document.getElementById('btn-ctx-add-child').addEventListener('click', () => {
+          const id = contextMenuNodeId;
+          hideContextMenu();
+          if (id) openNodeEditor('add', id);
+        });
+        document.getElementById('btn-ctx-lightbox').addEventListener('click', () => {
+          const id = contextMenuNodeId;
+          hideContextMenu();
+          if (id) {
+            selectNode(id, true, true);
+            openLightbox(id);
+          }
+        });
+        document.getElementById('btn-ctx-edit').addEventListener('click', () => {
+          const id = contextMenuNodeId;
+          hideContextMenu();
+          if (id) openNodeEditor('edit', id);
+        });
+        document.getElementById('btn-ctx-delete').addEventListener('click', () => {
+          const id = contextMenuNodeId;
+          hideContextMenu();
+          if (id) deleteNodeById(id);
+        });
+
+        document.getElementById('btn-lightbox-close').addEventListener('click', () => {
+          document.getElementById('lightbox-modal').classList.add('hidden');
+        });
+        document.getElementById('btn-lightbox-zoom-in').addEventListener('click', () => {
+          lightboxZoom = Math.min(2.6, lightboxZoom + 0.25);
+          document.getElementById('lightbox-img').style.transform = `scale(${lightboxZoom})`;
+        });
+        document.getElementById('btn-lightbox-zoom-out').addEventListener('click', () => {
+          lightboxZoom = Math.max(0.6, lightboxZoom - 0.25);
+          document.getElementById('lightbox-img').style.transform = `scale(${lightboxZoom})`;
+        });
+
+        document.getElementById('node-editor-form').addEventListener('submit', handleNodeEditorSubmit);
+        document.getElementById('btn-editor-close').addEventListener('click', () => {
+          document.getElementById('node-editor-modal').classList.add('hidden');
+        });
+        document.getElementById('btn-editor-cancel').addEventListener('click', () => {
+          document.getElementById('node-editor-modal').classList.add('hidden');
+        });
+
+        document.getElementById('btn-link-modal-confirm').addEventListener('click', confirmCreateLink);
+        document.getElementById('btn-link-modal-close').addEventListener('click', () => {
+          document.getElementById('link-modal').classList.add('hidden');
+        });
+        document.getElementById('btn-link-modal-cancel').addEventListener('click', () => {
+          document.getElementById('link-modal').classList.add('hidden');
+        });
+
+        document.getElementById('btn-reset-camera-only').addEventListener('click', () => {
+          document.getElementById('reset-modal').classList.add('hidden');
+          camState.desiredTarget.set(0, 0, 0);
+          camState.desiredRadius = 68;
+          camState.desiredTheta = 0.35;
+          camState.desiredPhi = 1.22;
+          selectNode('core', false, false);
+          showToast('تمت إعادة الكاميرا والمنظور إلى الوضع الأصلي ✓');
+        });
+
+        document.getElementById('btn-reset-full-data').addEventListener('click', () => {
+          document.getElementById('reset-modal').classList.add('hidden');
+          try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+          graphData = getDefaultGraphData();
+          navigationHistory = [];
+          updateBackButtonState();
+          coreRingsGroup.position.set(0, 0, 0);
+          camState.desiredTarget.set(0, 0, 0);
+          camState.desiredRadius = 68;
+          camState.desiredTheta = 0.35;
+          camState.desiredPhi = 1.22;
+          rebuildSceneGraph();
+          selectNode('core', false, false);
+          showToast('تمت استعادة العالم الأصلي بالكامل ✓');
+        });
+
+        document.getElementById('btn-reset-modal-close').addEventListener('click', () => {
+          document.getElementById('reset-modal').classList.add('hidden');
+        });
+        document.getElementById('btn-reset-modal-cancel').addEventListener('click', () => {
+          document.getElementById('reset-modal').classList.add('hidden');
+        });
+
+        document.getElementById('btn-help-close').addEventListener('click', () => {
+          document.getElementById('help-modal').classList.add('hidden');
+        });
+        document.getElementById('btn-help-start').addEventListener('click', () => {
+          document.getElementById('help-modal').classList.add('hidden');
+        });
+        document.getElementById('btn-dismiss-hint').addEventListener('click', () => {
+          document.getElementById('onboarding-hint').classList.add('hidden');
+        });
+
+        window.addEventListener('keydown', (e) => {
+          const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+          const isTyping = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select';
+
+          if (e.key === 'Escape') {
+            document.getElementById('lightbox-modal').classList.add('hidden');
+            document.getElementById('node-editor-modal').classList.add('hidden');
+            document.getElementById('link-modal').classList.add('hidden');
+            document.getElementById('reset-modal').classList.add('hidden');
+            document.getElementById('help-modal').classList.add('hidden');
+            document.getElementById('search-dropdown').classList.add('hidden');
+            hideContextMenu();
+            setLinkMode(false);
+            return;
+          }
+
+          if (isTyping) return;
+
+          if (e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'k')) {
+            e.preventDefault();
+            document.getElementById('search-input').focus();
+          } else if (e.key === 'Backspace') {
+            e.preventDefault();
+            goBackToPreviousLevel();
+          } else if (e.key === ' ') {
+            e.preventDefault();
+            toggleNodeBranches(selectedNodeId);
+          } else if (e.key.toLowerCase() === 'n') {
+            e.preventDefault();
+            openNodeEditor('add', selectedNodeId);
+          } else if (e.key.toLowerCase() === 'l') {
+            e.preventDefault();
+            setLinkMode(!isLinkMode, selectedNodeId);
+          } else if (e.key.toLowerCase() === 'r') {
+            e.preventDefault();
+            autoArrangeKnowledgeMap();
+          } else if (e.key.toLowerCase() === 'h' || e.key === '0') {
+            e.preventDefault();
+            selectNode('core', true, true);
+          } else if (e.key.toLowerCase() === 'm') {
+            e.preventDefault();
+            document.getElementById('btn-reduced-motion').click();
+          } else if (e.key === '?' || e.key === '؟') {
+            e.preventDefault();
+            document.getElementById('help-modal').classList.toggle('hidden');
+          }
+        });
+      }
+
+      // =========================================================================
+      // 16. INITIALIZATION
+      // =========================================================================
+      function initApp() {
+        if (reducedMotion) {
+          document.body.classList.add('reduced-motion');
+        }
+        loadStateFromStorage();
+        rebuildSceneGraph();
+        bindUIEvents();
+        updateCameraFromSpherical(true);
+        selectNode('core', false, false);
+        renderPathwayStepper();
+        requestAnimationFrame(animate);
+      }
+
+      window.addEventListener('load', initApp);
+    })();
+  </script>
+</body>
+</html>
