@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>العالم المعرفي ثلاثي الأبعاد | الذكاء الاصطناعي في التعليم الجامعي</title>
+  <title>المختبر المعرفي ثلاثي الأبعاد | الذكاء الاصطناعي في التعليم الجامعي</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <!-- Three.js r128 -->
@@ -15,10 +15,10 @@
 
   <style>
     :root {
-      --bg-deep: #050814;
-      --bg-panel: rgba(10, 16, 34, 0.86);
-      --border-glow: rgba(56, 189, 248, 0.28);
-      --cyan-glow: #06b6d4;
+      --bg-deep: #030611;
+      --bg-panel: rgba(7, 12, 26, 0.86);
+      --border-glow: rgba(0, 242, 254, 0.28);
+      --cyan-glow: #00f2fe;
       --violet-glow: #8b5cf6;
     }
 
@@ -34,7 +34,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: var(--bg-deep);
+      background: radial-gradient(circle at 50% 42%, #0a132c 0%, #050917 52%, #02040a 100%);
       color: #f1f5f9;
       font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
       touch-action: none;
@@ -50,35 +50,45 @@
       display: inline-block;
     }
 
-    /* Glassmorphism panels */
+    /* Futuristic Glassmorphism panels */
     .glass-panel {
-      background: rgba(10, 16, 35, 0.84);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(56, 189, 248, 0.22);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      background: linear-gradient(160deg, rgba(10, 17, 38, 0.88) 0%, rgba(5, 9, 22, 0.92) 100%);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(56, 189, 248, 0.24);
+      box-shadow: 0 14px 44px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.09);
     }
 
     .glass-pill {
-      background: rgba(15, 23, 48, 0.82);
+      background: rgba(11, 18, 40, 0.82);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(139, 92, 246, 0.28);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.52);
     }
 
-    /* 3D Node Projected Floating Labels & Image Cards */
+    /* 3D Node Projected Floating Labels & Image Cards Layer */
     #labels-layer {
       position: absolute;
       inset: 0;
       pointer-events: none;
       overflow: hidden;
       z-index: 10;
+      transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    /* إخفاء البطاقات والأيقونات العائمة فوق عقد المشهد ثلاثي الأبعاد */
+    /* Master Hidden State: zero pointer interference, zero layout gaps */
+    #labels-layer.floating-layer-hidden {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    #labels-layer.floating-layer-hidden .node-floating-tag {
+      pointer-events: none !important;
+    }
+
     .node-floating-tag {
-      display: none !important;
       position: absolute;
       left: 0;
       top: 0;
@@ -86,7 +96,10 @@
       pointer-events: auto;
       cursor: grab;
       touch-action: none;
-      transition: opacity 0.25s ease, filter 0.25s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                  filter 0.28s ease,
+                  border-color 0.22s ease,
+                  box-shadow 0.22s ease;
       will-change: transform, opacity;
     }
 
@@ -94,21 +107,41 @@
       cursor: grabbing;
     }
 
+    .node-floating-tag.tag-hidden-by-mode {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
     .node-floating-tag.dimmed {
-      opacity: 0.22 !important;
-      filter: grayscale(45%);
+      opacity: 0.20 !important;
+      filter: grayscale(48%);
     }
 
     .node-floating-tag.highlighted {
       z-index: 35 !important;
-      border-color: rgba(56, 189, 248, 0.85) !important;
-      box-shadow: 0 0 24px rgba(6, 182, 212, 0.45), 0 8px 25px rgba(0, 0, 0, 0.7) !important;
+      border-color: rgba(0, 242, 254, 0.92) !important;
+      box-shadow: 0 0 26px rgba(6, 182, 212, 0.52), 0 8px 25px rgba(0, 0, 0, 0.78) !important;
     }
 
     .node-floating-tag.link-target-hover {
       border-color: #ec4899 !important;
       box-shadow: 0 0 28px rgba(236, 72, 153, 0.75) !important;
       transform: translate(-50%, -50%) scale(1.08) !important;
+    }
+
+    /* Hide decorative icons inside floating tags when decorative badges are turned off */
+    body.hide-decorative-badges .node-Convert-icon,
+    body.hide-decorative-badges .node-dec-icon {
+      display: none !important;
+    }
+
+    /* Hide decorative HUD & ambient elements when decorative layer is turned off */
+    body.hide-decorative-ui .decorative-ui-element {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      transition: opacity 0.28s ease, visibility 0.28s ease;
     }
 
     /* Custom Scrollbar */
@@ -147,7 +180,7 @@
     }
   </style>
 </head>
-<body class="relative w-full h-full select-none overflow-hidden bg-[#050814]">
+<body class="relative w-full h-full select-none overflow-hidden bg-[#030611]">
 
   <!-- 3D WebGL Canvas Container -->
   <div id="canvas-container" class="absolute inset-0 w-full h-full z-0" style="touch-action: none;"></div>
@@ -156,7 +189,7 @@
   <svg id="link-drag-svg" class="absolute inset-0 w-full h-full pointer-events-none z-20 hidden">
     <defs>
       <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#06b6d4" />
+        <stop offset="0%" stop-color="#00f2fe" />
         <stop offset="50%" stop-color="#a855f7" />
         <stop offset="100%" stop-color="#ec4899" />
       </linearGradient>
@@ -174,40 +207,50 @@
     <circle id="longpress-progress" cx="34" cy="34" r="28" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="176" transform="rotate(-90 34 34)"></circle>
   </svg>
 
-  <!-- TOP NAVIGATION & RESEARCH HUD -->
-  <header class="fixed top-0 inset-x-0 z-40 p-2.5 md:p-3.5 pointer-events-none flex flex-col gap-2">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      
-      <!-- Brand & Research Title -->
-      <div class="glass-panel pointer-events-auto rounded-2xl px-3.5 py-2 flex items-center gap-3 max-w-full">
-        <button id="btn-focus-core" type="button" title="العودة إلى النواة المركزية (H)" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/30 to-violet-600/30 border border-cyan-400/40 flex items-center justify-center text-cyan-300 hover:scale-105 active:scale-95 transition shrink-0 shadow-lg shadow-cyan-950/50">
+  <!-- ACTIVE LINK MODE FLOATING BANNER (Bottom-centered above dock, only when active) -->
+  <div class="fixed bottom-16 inset-x-0 z-40 flex justify-center pointer-events-none px-3">
+    <div id="link-mode-banner" class="hidden glass-pill pointer-events-auto rounded-xl px-3 py-1.5 text-xs bg-fuchsia-950/90 border-fuchsia-400/60 text-fuchsia-200 flex items-center gap-2 animate-pulse shadow-2xl">
+      <span>🔗 وضع الربط نشط: اسحب من أي عقدة إلى عقدة أخرى أو انقر عقدتين متتاليتين لربطهما</span>
+      <button id="btn-cancel-link-mode" type="button" class="px-2 py-0.5 rounded bg-fuchsia-500/30 hover:bg-fuchsia-500/50 text-white font-semibold">إلغاء</button>
+    </div>
+  </div>
+
+  <!-- RELOCATED TOOLS, SEARCH & ACTIONS DRAWER (Moved away from the 3D Core viewport) -->
+  <div id="tools-drawer-backdrop" class="hidden fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm transition-opacity"></div>
+  <header id="tools-drawer-panel" class="fixed bottom-14 right-3 left-3 md:left-auto md:right-4 md:w-[420px] z-50 glass-panel rounded-3xl p-3.5 border border-cyan-400/40 shadow-2xl transition-all duration-300 translate-y-[130%] opacity-0 pointer-events-none flex flex-col gap-3 max-h-[78vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-slate-800/90 pb-2.5">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <button id="btn-focus-core" type="button" title="العودة إلى النواة المركزية (H)" class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/35 to-violet-600/35 border border-cyan-400/50 flex items-center justify-center text-cyan-200 hover:scale-105 active:scale-95 transition shrink-0 shadow-lg shadow-cyan-950/60">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="3" />
+            <circle cx="12" cy="12" r="3.5" />
             <path stroke-linecap="round" d="M12 2v3m0 14v3M2 12h3m14 0h3m-3.5-6.5l-2.1 2.1M7.6 16.4l-2.1 2.1m0-13l2.1 2.1m8.8 8.8l2.1 2.1" />
           </svg>
         </button>
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <h1 class="text-sm md:text-base font-bold text-white truncate">الذكاء الاصطناعي في التعليم الجامعي</h1>
-            <span id="save-status-badge" class="hidden sm:inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            <h1 class="text-xs sm:text-sm font-extrabold text-white truncate">الذكاء الاصطناعي في التعليم الجامعي</h1>
+            <span id="save-status-badge" class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
               محفوظ محليًا
             </span>
           </div>
-          <p class="text-[11px] text-slate-300 truncate">الفضاء المعرفي التفاعلي ثلاثي الأبعاد • <span id="hud-stats-count" class="text-cyan-300 font-semibold">34 عقدة</span></p>
+          <p class="text-[10px] sm:text-[11px] text-slate-300 truncate">المختبر المعرفي ثلاثي الأبعاد • <span id="hud-stats-count" class="text-cyan-300 font-semibold">30 عقدة</span></p>
         </div>
       </div>
+      <button id="btn-close-tools-drawer" type="button" title="إغلاق قائمة الأدوات" class="w-8 h-8 rounded-xl bg-slate-800/90 hover:bg-rose-500/25 text-slate-300 hover:text-white text-xs font-bold shrink-0">✕</button>
+    </div>
 
-      <!-- Search & Filter Bar -->
-      <div class="glass-panel pointer-events-auto rounded-2xl p-1.5 flex items-center gap-1.5 flex-1 min-w-[230px] max-w-md relative">
+    <!-- Search & Filter Bar inside Drawer -->
+    <div class="rounded-2xl bg-slate-900/60 p-2 border border-slate-800/90 flex flex-col gap-2 relative">
+      <div class="flex items-center gap-1.5">
         <div class="relative flex-1">
-          <input id="search-input" type="text" placeholder="ابحث عن مفهوم، فصل، صورة علمية، أو مرجع... (/)" class="w-full bg-slate-900/75 text-xs md:text-sm text-white placeholder-slate-400 rounded-xl pr-9 pl-7 py-2 border border-slate-700/70 focus:outline-none focus:border-cyan-400 transition" />
-          <svg class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <input id="search-input" type="text" placeholder="ابحث عن مفهوم، فصل، صورة علمية، أو مرجع... (/)" class="w-full bg-slate-950/90 text-xs text-white placeholder-slate-400 rounded-xl pr-8 pl-6 py-2 border border-slate-700/70 focus:outline-none focus:border-cyan-400 transition" />
+          <svg class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="8" /><path stroke-linecap="round" d="m21 21-4.3-4.3" />
           </svg>
-          <button id="btn-clear-search" type="button" title="مسح البحث" class="hidden absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1">✕</button>
+          <button id="btn-clear-search" type="button" title="مسح البحث" class="hidden absolute left-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 text-xs">✕</button>
         </div>
-        <select id="filter-category" aria-label="تصفية حسب نوع العقدة" class="bg-slate-900/90 text-xs text-slate-200 rounded-xl px-2.5 py-2 border border-slate-700/70 focus:outline-none focus:border-cyan-400 cursor-pointer">
+        <select id="filter-category" aria-label="تصفية حسب نوع العقدة" class="bg-slate-950/90 text-[11px] text-slate-200 rounded-xl px-2.5 py-2 border border-slate-700/70 focus:outline-none focus:border-cyan-400 cursor-pointer">
           <option value="all">كل العناصر</option>
           <option value="section">الفصول (8)</option>
           <option value="concept">المفاهيم</option>
@@ -216,68 +259,121 @@
           <option value="evidence">الأدلة والبيانات</option>
           <option value="reference">المراجع الموثقة</option>
         </select>
+      </div>
+      <!-- Search Results Dropdown -->
+      <div id="search-dropdown" class="hidden glass-panel rounded-2xl max-h-52 overflow-y-auto z-50 p-2 divide-y divide-slate-800/80 shadow-2xl"></div>
+    </div>
 
-        <!-- Search Results Dropdown -->
-        <div id="search-dropdown" class="hidden absolute top-full right-0 left-0 mt-2 glass-panel rounded-2xl max-h-72 overflow-y-auto z-50 p-2 divide-y divide-slate-800/80 shadow-2xl"></div>
+    <!-- Breadcrumb Trail inside Drawer -->
+    <div id="breadcrumb-bar" class="decorative-ui-element glass-pill rounded-xl px-3 py-1.5 text-[11px] flex items-center gap-1.5 overflow-x-auto max-w-full">
+      <!-- Populated dynamically -->
+    </div>
+
+    <!-- Relocated Action Icons Grid inside Drawer -->
+    <div class="space-y-2 relative">
+      <div class="text-[11px] font-bold text-slate-400 px-1">أدوات التحكم بالعالم المعرفي والعناصر العائمة:</div>
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <div class="flex items-center rounded-xl bg-cyan-500/15 border border-cyan-400/45 overflow-hidden flex-1 min-w-[180px]">
+          <button id="btn-toggle-floating" type="button" title="إظهار أو إخفاء أسماء العقد والبطاقات العائمة فوق المشهد (V)" class="flex-1 px-3 py-2 text-xs font-bold flex items-center justify-center gap-1.5 text-cyan-200 hover:bg-cyan-500/20 transition">
+            <span id="floating-toggle-icon">👁️</span>
+            <span id="floating-toggle-label">العناصر العائمة: ظاهرة</span>
+          </button>
+          <button id="btn-floating-layers-menu" type="button" title="تخصيص طبقات العناصر العائمة (البطاقات الأساسية مقابل العناصر الزخرفية)" class="px-2.5 py-2 text-xs text-cyan-300 hover:bg-cyan-500/25 border-r border-cyan-400/30 transition" aria-label="إعدادات طبقات العناصر العائمة">
+            ⚙️
+          </button>
+        </div>
+
+        <button id="btn-back-level" type="button" disabled title="العودة إلى المستوى والموقع السابق (Backspace)" class="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-slate-800/80 text-slate-200 hover:bg-cyan-500/20 hover:text-cyan-200 disabled:opacity-40 disabled:pointer-events-none transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg>
+          <span>مستوى سابق</span>
+        </button>
       </div>
 
-      <!-- Quick Action Controls -->
-      <div class="glass-panel pointer-events-auto rounded-2xl p-1.5 flex items-center gap-1 flex-wrap">
-        <button id="btn-back-level" type="button" disabled title="العودة إلى المستوى والموقع السابق (Backspace)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-slate-800/80 text-slate-200 hover:bg-cyan-500/20 hover:text-cyan-200 disabled:opacity-40 disabled:pointer-events-none transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg>
-          <span class="hidden sm:inline">مستوى سابق</span>
-        </button>
+      <!-- Smart Floating Layers Section -->
+      <div id="floating-layers-popover" class="hidden glass-panel rounded-2xl p-3 border border-cyan-400/40 shadow-xl space-y-2.5 text-xs">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <span class="font-extrabold text-cyan-300 flex items-center gap-1.5">✨ تخصيص طبقات العناصر العائمة</span>
+          <button id="btn-close-layers-popover" type="button" class="text-slate-400 hover:text-white px-1">✕</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          <label class="flex items-start justify-between gap-2 p-2 rounded-xl bg-slate-900/85 border border-slate-800 cursor-pointer">
+            <div>
+              <div class="font-bold text-white text-[11px]">1. البطاقات الأساسية</div>
+              <div class="text-[10px] text-slate-400">أسماء العقد والصور</div>
+            </div>
+            <input id="chk-layer-essential" type="checkbox" checked class="mt-1 w-4 h-4 accent-cyan-400 rounded cursor-pointer" />
+          </label>
+          <label class="flex items-start justify-between gap-2 p-2 rounded-xl bg-slate-900/85 border border-slate-800 cursor-pointer">
+            <div>
+              <div class="font-bold text-violet-200 text-[11px]">2. وضع التركيز</div>
+              <div class="text-[10px] text-slate-400">العقدة النشطة فقط</div>
+            </div>
+            <input id="chk-layer-focus-only" type="checkbox" class="mt-1 w-4 h-4 accent-violet-400 rounded cursor-pointer" />
+          </label>
+          <label class="flex items-start justify-between gap-2 p-2 rounded-xl bg-slate-900/85 border border-slate-800 cursor-pointer">
+            <div>
+              <div class="font-bold text-sky-200 text-[11px]">3. الأيقونات والشارات</div>
+              <div class="text-[10px] text-slate-400">رموز البطاقات</div>
+            </div>
+            <input id="chk-layer-badges" type="checkbox" checked class="mt-1 w-4 h-4 accent-sky-400 rounded cursor-pointer" />
+          </label>
+          <label class="flex items-start justify-between gap-2 p-2 rounded-xl bg-slate-900/85 border border-slate-800 cursor-pointer">
+            <div>
+              <div class="font-bold text-emerald-200 text-[11px]">4. العناصر الزخرفية</div>
+              <div class="text-[10px] text-slate-400">الأشعة والجسيمات</div>
+            </div>
+            <input id="chk-layer-decorative" type="checkbox" checked class="mt-1 w-4 h-4 accent-emerald-400 rounded cursor-pointer" />
+          </label>
+        </div>
+        <div class="pt-1 flex items-center justify-between gap-2">
+          <button id="btn-show-all-layers" type="button" class="flex-1 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-200 font-bold text-[11px] transition">إظهار الكل</button>
+          <button id="btn-pure-3d-mode" type="button" class="flex-1 py-1.5 rounded-xl bg-violet-500/20 hover:bg-violet-500/35 text-violet-200 font-bold text-[11px] transition">مشهد ثلاثي الأبعاد صافي</button>
+        </div>
+      </div>
 
-        <button id="btn-guided-chain" type="button" title="استكشاف متسلسل: صورة علمية ← مفهوم ← تفسير ← دليل" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-gradient-to-r from-cyan-500/25 to-violet-500/25 border border-cyan-400/40 text-cyan-200 hover:from-cyan-500/40 hover:to-violet-500/40 transition">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
+        <button id="btn-guided-chain" type="button" title="استكشاف متسلسل: صورة علمية ← مفهوم ← تفسير ← دليل" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-500/25 to-violet-500/25 border border-cyan-400/40 text-cyan-200 hover:from-cyan-500/40 hover:to-violet-500/40 transition">
           <span>🧭</span>
-          <span class="hidden md:inline">مسار: صورة ← مفهوم ← تفسير ← دليل</span>
-          <span class="md:hidden">مسار علمي</span>
+          <span>مسار علمي</span>
         </button>
 
-        <button id="btn-toggle-link-mode" type="button" title="وضع سحب رابط معرفي بين مفهومين (L)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-slate-800/80 text-slate-200 hover:bg-fuchsia-500/25 hover:text-fuchsia-200 border border-transparent transition">
+        <button id="btn-toggle-link-mode" type="button" title="وضع سحب رابط معرفي بين مفهومين (L)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-slate-800/80 text-slate-200 hover:bg-fuchsia-500/25 hover:text-fuchsia-200 border border-transparent transition">
           <span>🔗</span>
-          <span class="hidden sm:inline">ربط مفاهيم</span>
+          <span>ربط مفاهيم</span>
         </button>
 
-        <button id="btn-add-node-top" type="button" title="إضافة عقدة معرفية جديدة (N)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1 bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/35 transition">
+        <button id="btn-add-node-top" type="button" title="إضافة عقدة معرفية جديدة (N)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/35 transition">
           <span>＋</span>
-          <span class="hidden sm:inline">عقدة جديدة</span>
+          <span>عقدة جديدة</span>
         </button>
 
-        <button id="btn-auto-layout" type="button" title="إعادة ترتيب الخريطة المعرفية تلقائيًا (R)" class="p-2 rounded-xl text-xs bg-slate-800/80 text-slate-200 hover:bg-cyan-500/20 hover:text-cyan-200 transition" aria-label="إعادة ترتيب الخريطة تلقائيا">
+        <button id="btn-auto-layout" type="button" title="إعادة ترتيب الخريطة المعرفية تلقائيًا (R)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-slate-800/80 text-slate-200 hover:bg-cyan-500/20 hover:text-cyan-200 transition" aria-label="إعادة ترتيب الخريطة تلقائيا">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h14" /></svg>
+          <span>ترتيب تلقائي</span>
         </button>
 
-        <button id="btn-reduced-motion" type="button" title="تقليل الحركة والمؤثرات للأجهزة والراحة البصرية (M)" class="p-2 rounded-xl text-xs bg-slate-800/80 text-slate-200 hover:bg-violet-500/20 hover:text-violet-200 transition" aria-label="تقليل الحركة">
+        <button id="btn-reduced-motion" type="button" title="تقليل الحركة والمؤثرات للأجهزة والراحة البصرية (M)" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-slate-800/80 text-slate-200 hover:bg-violet-500/20 hover:text-violet-200 transition" aria-label="تقليل الحركة">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          <span>تقليل الحركة</span>
         </button>
 
-        <button id="btn-reset-scene" type="button" title="إعادة المشهد إلى وضعه الأصلي" class="p-2 rounded-xl text-xs bg-slate-800/80 text-rose-300 hover:bg-rose-500/20 transition" aria-label="إعادة المشهد لوضعه الأصلي">
+        <button id="btn-reset-scene" type="button" title="إعادة المشهد إلى وضعه الأصلي" class="px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-slate-800/80 text-rose-300 hover:bg-rose-500/20 transition" aria-label="إعادة المشهد لوضعه الأصلي">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          <span>إعادة المشهد</span>
         </button>
+      </div>
 
+      <div class="pt-1 flex items-center justify-between">
+        <span class="text-[11px] text-slate-400">دليل الاستخدام واختصارات لوحة المفاتيح:</span>
         <button id="btn-help-modal" type="button" title="تلميحات الاستخدام واختصارات لوحة المفاتيح (?)" class="w-8 h-8 rounded-xl text-xs font-bold bg-slate-800/90 text-cyan-300 hover:bg-cyan-500/25 border border-cyan-500/30 transition">
           ؟
         </button>
       </div>
     </div>
-
-    <!-- Breadcrumb & Active Mode Strip -->
-    <div class="flex items-center justify-between gap-2 pointer-events-none">
-      <div id="breadcrumb-bar" class="glass-pill pointer-events-auto rounded-xl px-3 py-1.5 text-xs flex items-center gap-1.5 overflow-x-auto max-w-full">
-        <!-- Populated dynamically -->
-      </div>
-
-      <!-- Active Link Mode Banner -->
-      <div id="link-mode-banner" class="hidden glass-pill pointer-events-auto rounded-xl px-3 py-1.5 text-xs bg-fuchsia-950/90 border-fuchsia-400/60 text-fuchsia-200 flex items-center gap-2 animate-pulse">
-        <span>🔗 وضع الربط نشط: اسحب من أي عقدة إلى عقدة أخرى أو انقر عقدتين متتاليتين لربطهما</span>
-        <button id="btn-cancel-link-mode" type="button" class="px-2 py-0.5 rounded bg-fuchsia-500/30 hover:bg-fuchsia-500/50 text-white font-semibold">إلغاء</button>
-      </div>
-    </div>
   </header>
 
   <!-- SCIENTIFIC PATHWAY STEPPER BAR (Image -> Concept -> Explanation -> Evidence) -->
-  <div id="pathway-bar" class="hidden fixed top-28 right-4 left-4 md:left-auto md:right-5 z-30 max-w-xl glass-panel rounded-2xl p-3 border border-cyan-400/40 shadow-2xl">
+  <div id="pathway-bar" class="hidden fixed bottom-16 right-3 left-3 md:left-auto md:right-5 z-30 max-w-xl glass-panel rounded-2xl p-3 border border-cyan-400/40 shadow-2xl">
     <div class="flex items-center justify-between gap-2 mb-2">
       <div class="flex items-center gap-2">
         <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">مسار الترابط المعرفي المتسلسل</span>
@@ -294,24 +390,31 @@
   </div>
 
   <!-- SIDE / FLOATING KNOWLEDGE INSPECTOR PANEL -->
-  <aside id="inspector-panel" class="fixed bottom-0 right-0 left-0 md:top-28 md:bottom-4 md:right-4 md:left-auto md:w-[410px] z-30 glass-panel rounded-t-3xl md:rounded-3xl flex flex-col max-h-[62vh] md:max-h-[calc(100vh-8.5rem)] transition-transform duration-300">
-    <!-- Mobile Drag Handle / Collapse Toggle -->
-    <div class="flex items-center justify-between px-4 pt-3 pb-2 border-b border-slate-800/80 shrink-0">
+  <aside id="inspector-panel" class="fixed bottom-0 right-0 left-0 md:top-24 md:bottom-4 md:right-4 md:left-auto md:w-[395px] z-30 glass-panel rounded-t-3xl md:rounded-3xl flex flex-col max-h-[54vh] md:max-h-[calc(100vh-7rem)] transition-all duration-300">
+    <!-- Header Bar with Quick Node Title & Collapse Toggle -->
+    <div id="inspector-header-bar" class="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/80 shrink-0 cursor-pointer">
       <div class="flex items-center gap-2 min-w-0">
-        <span id="panel-node-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">النواة المركزية</span>
+        <span id="panel-node-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shrink-0">النواة المركزية</span>
         <span id="panel-provenance-badge" class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-400/30 truncate">إطار مفاهيمي</span>
       </div>
-      <div class="flex items-center gap-1">
-        <button id="btn-collapse-panel" type="button" title="طي/توسيع لوحة التفاصيل" class="p-1.5 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white text-xs">
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="btn-quick-eye-bottom" type="button" title="إظهار أو إخفاء الأسماء العائمة فوق النواة (V)" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/40 text-cyan-200 text-xs font-bold flex items-center gap-1 transition">
+          <span id="quick-eye-bottom-icon">👁️</span>
+        </button>
+        <button id="btn-open-tools-drawer" type="button" title="فتح قائمة الأدوات والبحث والفلاتر" class="px-2.5 py-1.5 rounded-xl bg-violet-500/25 hover:bg-violet-500/40 border border-violet-400/45 text-violet-100 text-xs font-bold flex items-center gap-1 transition">
+          <span>🛠️</span>
+          <span>الأدوات</span>
+        </button>
+        <button id="btn-collapse-panel" type="button" title="طي أو توسيع لوحة المعلومات لإتاحة رؤية كاملة للمشهد" class="p-1.5 rounded-xl bg-slate-800/90 hover:bg-cyan-500/25 text-slate-200 hover:text-white text-xs font-semibold flex items-center gap-1 transition">
           <span id="panel-collapse-icon">▼</span>
         </button>
       </div>
     </div>
 
     <!-- Scrollable Inspector Body -->
-    <div id="inspector-body" class="p-4 overflow-y-auto space-y-4 selectable-text flex-1">
+    <div id="inspector-body" class="p-4 overflow-y-auto space-y-3.5 selectable-text flex-1">
       <div>
-        <h2 id="panel-title-ar" class="text-lg font-extrabold text-white leading-snug">الذكاء الاصطناعي في التعليم الجامعي</h2>
+        <h2 id="panel-title-ar" class="text-base md:text-lg font-extrabold text-white leading-snug">الذكاء الاصطناعي في التعليم الجامعي</h2>
         <p id="panel-title-en" class="text-xs text-cyan-300/90 en-term mt-0.5 font-medium">Artificial Intelligence in Higher Education</p>
       </div>
 
@@ -324,7 +427,7 @@
       <!-- Scientific Visual Card Preview (Shown when node has an image/diagram or linked image) -->
       <div id="panel-image-card" class="hidden rounded-2xl overflow-hidden border border-cyan-500/40 bg-slate-950/90 shadow-lg">
         <div class="relative group cursor-pointer" id="btn-open-lightbox-from-panel">
-          <img id="panel-image-preview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="رسم علمي" class="w-full h-44 object-contain bg-slate-950 p-2 max-w-full" />
+          <img id="panel-image-preview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="رسم علمي" class="w-full h-40 object-contain bg-slate-950 p-2 max-w-full" />
           <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent flex items-end justify-between p-3">
             <span class="text-xs font-bold text-cyan-200 flex items-center gap-1.5 bg-slate-900/85 px-2.5 py-1 rounded-xl border border-cyan-400/30">
               🔍 تكبير البطاقة العلمية وشرحها
@@ -389,8 +492,8 @@
   </aside>
 
   <!-- BOTTOM-LEFT FLOATING 3D CAMERA & TOUCH CONTROLS -->
-  <div class="fixed bottom-4 left-4 z-30 flex flex-col gap-2 pointer-events-none hidden sm:flex">
-    <div class="glass-panel pointer-events-auto rounded-2xl p-1.5 flex flex-col gap-1 items-center">
+  <div class="fixed bottom-16 md:bottom-4 left-3 md:left-4 z-30 flex flex-col gap-2 pointer-events-none">
+    <div class="glass-panel pointer-events-auto rounded-2xl p-1.5 flex flex-col gap-1 items-center shadow-2xl">
       <button id="btn-zoom-in" type="button" title="تكبير المشهد (+)" class="w-9 h-9 rounded-xl bg-slate-800/90 hover:bg-cyan-500/25 text-white font-bold text-base flex items-center justify-center transition">＋</button>
       <button id="btn-zoom-out" type="button" title="تصغير المشهد (-)" class="w-9 h-9 rounded-xl bg-slate-800/90 hover:bg-cyan-500/25 text-white font-bold text-base flex items-center justify-center transition">－</button>
       <button id="btn-toggle-pan-mode" type="button" title="تبديل نمط سحب الفضاء: دوران ثلاثي الأبعاد / تحريك أفقي" class="w-9 h-9 rounded-xl bg-slate-800/90 hover:bg-violet-500/25 text-cyan-300 text-xs font-bold flex items-center justify-center transition">
@@ -401,8 +504,8 @@
       </button>
     </div>
 
-    <!-- Legend Chip -->
-    <div class="glass-pill pointer-events-auto rounded-2xl px-3 py-2 text-[11px] flex flex-wrap items-center gap-2.5 text-slate-300">
+    <!-- Legend Chip (Marked as decorative-ui-element so it can be toggled independently) -->
+    <div class="decorative-ui-element hidden sm:flex glass-pill pointer-events-auto rounded-2xl px-3 py-2 text-[11px] flex-wrap items-center gap-2.5 text-slate-300">
       <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span> فصل رئيسي</span>
       <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block"></span> مفهوم</span>
       <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> تفسير</span>
@@ -441,7 +544,6 @@
   <!-- SCIENTIFIC IMAGE LIGHTBOX & PATHWAY MODAL -->
   <div id="lightbox-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-3 md:p-6">
     <div class="glass-panel rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-cyan-400/40 shadow-2xl">
-      <!-- Lightbox Header -->
       <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between gap-3">
         <div class="min-w-0">
           <div class="flex items-center gap-2">
@@ -457,12 +559,10 @@
         </div>
       </div>
 
-      <!-- Lightbox Interactive Diagram Viewport -->
       <div class="relative flex-1 bg-[#040711] overflow-auto flex items-center justify-center p-4 min-h-[260px]">
         <img id="lightbox-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="رسم علمي مكبر" class="max-w-full max-h-[46vh] object-contain transition-transform duration-200 origin-center" />
       </div>
 
-      <!-- Lightbox Explanation, Source & Next Step in Chain -->
       <div class="p-4 md:p-5 bg-slate-900/90 border-t border-slate-800 space-y-3 overflow-y-auto max-h-[36vh]">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div class="md:col-span-2 space-y-1">
@@ -475,7 +575,6 @@
           </div>
         </div>
 
-        <!-- Direct Navigation from Image -> Concept -> Explanation -> Evidence -->
         <div class="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
           <span class="text-xs font-bold text-violet-300">انتقل مباشرة من هذه الصورة العلمية عبر المسار المعرفي:</span>
           <div id="lightbox-chain-links" class="flex flex-wrap items-center gap-2"></div>
@@ -587,7 +686,7 @@
     </div>
   </div>
 
-  <!-- RESET CONFIRMATION MODAL (No native confirm/alert!) -->
+  <!-- RESET CONFIRMATION MODAL -->
   <div id="reset-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
     <div class="glass-panel rounded-3xl max-w-md w-full p-5 border border-rose-400/40 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -616,7 +715,7 @@
     <div class="glass-panel rounded-3xl max-w-2xl w-full p-5 md:p-6 border border-cyan-400/40 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
-          <h3 class="text-base md:text-lg font-extrabold text-white">دليل استكشاف العالم المعرفي ثلاثي الأبعاد</h3>
+          <h3 class="text-base md:text-lg font-extrabold text-white">دليل استكشاف المختبر المعرفي ثلاثي الأبعاد</h3>
           <p class="text-xs text-cyan-300 mt-0.5">تحكّم كامل باللمس على الهاتف أو بالماوس ولوحة المفاتيح على الكمبيوتر</p>
         </div>
         <button id="btn-help-close" type="button" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white">✕</button>
@@ -624,18 +723,19 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
         <div class="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-          <h4 class="font-bold text-cyan-300 flex items-center gap-1.5">📱 التحكم باللمس والماوس</h4>
+          <h4 class="font-bold text-cyan-300 flex items-center gap-1.5">📱 التحكم باللمس والعناصر العائمة</h4>
           <ul class="space-y-1.5 text-slate-300 leading-relaxed">
-            <li>• <b>سحب أي عقدة:</b> اسحب العقدة أو بطاقتها بإصبعك أو بالماوس لتحريكها في الفضاء ثلاثي الأبعاد دون دوران الشاشة.</li>
-            <li>• <b>تحريك الفضاء والتكبير:</b> اسحب الفراغ للدوران حول المعرفة، واستخدم إصبعين (Pinch) أو عجلة الماوس للتكبير والتصغير.</li>
-            <li>• <b>الضغط المطوّل (Long Press):</b> اضغط مطولًا (0.5 ثانية) أو بزر الماوس الأيمن على أي عقدة لإظهار قائمة الخيارات السريعة.</li>
-            <li>• <b>سحب رابط معرفي:</b> فعّل «🔗 ربط مفاهيم» أو اسحب من مقبض الربط على البطاقة إلى عقدة أخرى لإنشاء علاقة ضوئية جديدة.</li>
+            <li>• <b>زر العناصر العائمة (👁️):</b> أظهر أو أخفِ البطاقات والأسماء العائمة بضغطة واحدة، أو افتح قائمة (⚙️) للفصل بين البطاقات الأساسية والعناصر الزخرفية.</li>
+            <li>• <b>تحديد وسحب العقد:</b> انقر على أي عقدة ثلاثية الأبعاد لتحديدها وعرض تفاصيلها، أو اسحبها لتحريكها في الفضاء.</li>
+            <li>• <b>تحريك الفضاء والتكبير:</b> اسحب الفراغ للدوران حول النواة، واستخدم إصبعين (Pinch) أو عجلة الماوس للتكبير والتصغير.</li>
+            <li>• <b>الضغط المطوّل (Long Press):</b> اضغط مطولًا (0.5 ثانية) أو بزر الماوس الأيمن على أي عقدة لإظهار الخيارات السريعة.</li>
           </ul>
         </div>
 
         <div class="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 space-y-2">
           <h4 class="font-bold text-violet-300 flex items-center gap-1.5">⌨️ اختصارات لوحة المفاتيح</h4>
           <div class="grid grid-cols-2 gap-1.5 text-slate-300">
+            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>إظهار/إخفاء العائم</span><kbd class="text-cyan-300 font-mono">V</kbd></div>
             <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>بحث فوري</span><kbd class="text-cyan-300 font-mono">/</kbd></div>
             <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>مستوى سابق</span><kbd class="text-cyan-300 font-mono">Backspace</kbd></div>
             <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>فتح/طي فرع</span><kbd class="text-cyan-300 font-mono">Space</kbd></div>
@@ -643,7 +743,6 @@
             <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>وضع الربط</span><kbd class="text-cyan-300 font-mono">L</kbd></div>
             <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>ترتيب تلقائي</span><kbd class="text-cyan-300 font-mono">R</kbd></div>
             <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>النواة المركزية</span><kbd class="text-cyan-300 font-mono">H</kbd></div>
-            <div class="bg-slate-950/70 px-2.5 py-1.5 rounded-lg flex justify-between"><span>تقليل الحركة</span><kbd class="text-cyan-300 font-mono">M</kbd></div>
           </div>
         </div>
       </div>
@@ -661,9 +760,9 @@
   </div>
 
   <!-- ONBOARDING QUICK TOAST / HINT FOR NEW USER -->
-  <div id="onboarding-hint" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 glass-pill rounded-2xl px-4 py-2.5 text-xs text-slate-100 flex items-center gap-3 shadow-2xl max-w-[92vw] sm:max-w-lg border border-cyan-400/40">
+  <div id="onboarding-hint" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-40 glass-pill rounded-2xl px-4 py-2 text-xs text-slate-100 flex items-center gap-3 shadow-2xl max-w-[92vw] sm:max-w-lg border border-cyan-400/40">
     <span class="text-base">✨</span>
-    <span class="leading-relaxed">مرحباً بك! اسحب أي عقدة لتحريكها، أو انقر على أي فصل لتوسيع فروعه، أو اضغط مطولاً لخيارات الربط والتحرير.</span>
+    <span class="leading-relaxed">تلميح: استخدم زر <b>«👁️ العناصر العائمة»</b> في الأعلى لإظهار أو إخفاء البطاقات فوق النواة في أي وقت، أو انقر على أي عقدة ثلاثية الأبعاد لاستكشافها.</span>
     <button id="btn-dismiss-hint" type="button" class="px-2.5 py-1 rounded-lg bg-cyan-500/25 hover:bg-cyan-500/40 text-cyan-200 font-bold shrink-0">فهمت</button>
   </div>
 
@@ -843,6 +942,7 @@
       // 2. INITIAL RESEARCH KNOWLEDGE GRAPH DATA («الذكاء الاصطناعي في التعليم الجامعي»)
       // =========================================================================
       const STORAGE_KEY = 'ai_higher_ed_3d_knowledge_world_v1';
+      const UI_PREFS_KEY = 'ai_higher_ed_3d_ui_prefs_v2';
 
       const GUIDED_CHAINS = [
         {
@@ -1386,7 +1486,7 @@
       }
 
       // =========================================================================
-      // 3. STATE MANAGEMENT & LOCAL STORAGE PERSISTENCE
+      // 3. STATE MANAGEMENT & SMART FLOATING LAYER PREFERENCES
       // =========================================================================
       let graphData = { nodes: [], links: [] };
       let selectedNodeId = 'core';
@@ -1399,7 +1499,26 @@
       let lightboxZoom = 1;
       let contextMenuNodeId = null;
 
+      // Smart Floating Elements Control State (Separating Essential Info vs Decorative)
+      const floatingPrefs = {
+        showEssentialCards: true,   // Master visibility for floating node titles & image cards
+        focusSelectedOnly: false,   // When true, only selected node (and immediate chain) shows floating card
+        showNodeBadges: true,       // Decorative icons & branch badges inside floating tags
+        showDecorativeScene: true   // Polar core beam, cosmic dust, breadcrumb & legend chips
+      };
+
       function loadStateFromStorage() {
+        try {
+          const rawPrefs = localStorage.getItem(UI_PREFS_KEY);
+          if (rawPrefs) {
+            const p = JSON.parse(rawPrefs);
+            if (typeof p.showEssentialCards === 'boolean') floatingPrefs.showEssentialCards = p.showEssentialCards;
+            if (typeof p.focusSelectedOnly === 'boolean') floatingPrefs.focusSelectedOnly = p.focusSelectedOnly;
+            if (typeof p.showNodeBadges === 'boolean') floatingPrefs.showNodeBadges = p.showNodeBadges;
+            if (typeof p.showDecorativeScene === 'boolean') floatingPrefs.showDecorativeScene = p.showDecorativeScene;
+          }
+        } catch (e) {}
+
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (raw) {
@@ -1417,10 +1536,14 @@
               return;
             }
           }
-        } catch (e) {
-          // Fallback to default data
-        }
+        } catch (e) {}
         graphData = getDefaultGraphData();
+      }
+
+      function saveUIPrefs() {
+        try {
+          localStorage.setItem(UI_PREFS_KEY, JSON.stringify(floatingPrefs));
+        } catch (e) {}
       }
 
       function saveStateToStorage() {
@@ -1431,9 +1554,7 @@
             badge.classList.remove('hidden');
             badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> تم الحفظ محلياً ✓';
           }
-        } catch (e) {
-          // Ignore storage quota errors
-        }
+        } catch (e) {}
       }
 
       function showToast(msg) {
@@ -1444,51 +1565,79 @@
         clearTimeout(showToast._timer);
         showToast._timer = setTimeout(() => {
           toast.classList.add('hidden');
-        }, 2800);
+        }, 2600);
       }
 
       // =========================================================================
-      // 4. THREE.JS 3D SCENE, NODES, LIGHT CURVES & PARTICLES
+      // 4. THREE.JS 3D SCENE, LUXURY CENTRAL CORE, SELECTION RETICLE & PARTICLES
       // =========================================================================
       const container = document.getElementById('canvas-container');
       const labelsLayer = document.getElementById('labels-layer');
 
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x050814, 0.0062);
+      scene.fog = new THREE.FogExp2(0x030611, 0.0055);
 
-      const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.5, 450);
+      const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 450);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.setClearColor(0x050814, 1);
+      renderer.setClearColor(0x030611, 1);
       container.appendChild(renderer.domElement);
 
-      const ambientLight = new THREE.AmbientLight(0x94a3b8, 0.85);
+      const ambientLight = new THREE.AmbientLight(0x94a3b8, 0.9);
       scene.add(ambientLight);
 
-      const coreLight = new THREE.PointLight(0x38bdf8, 2.4, 130);
-      coreLight.position.set(0, 8, 8);
+      const coreLight = new THREE.PointLight(0x00f2fe, 2.9, 155);
+      coreLight.position.set(0, 6, 6);
       scene.add(coreLight);
 
-      const violetLight = new THREE.PointLight(0x8b5cf6, 1.8, 140);
-      violetLight.position.set(-30, -20, -20);
+      const violetLight = new THREE.PointLight(0x8b5cf6, 2.2, 150);
+      violetLight.position.set(-28, -18, -22);
       scene.add(violetLight);
 
-      const particleCount = 420;
+      // Procedural Radial Glow Texture for Volumetric Multi-Layer Halos
+      function createRadialGlowTexture(innerColor, midColor, outerColor) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(128, 128, 6, 128, 128, 128);
+        grad.addColorStop(0.0, innerColor);
+        grad.addColorStop(0.38, midColor);
+        grad.addColorStop(0.72, outerColor);
+        grad.addColorStop(1.0, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 256);
+        return new THREE.CanvasTexture(canvas);
+      }
+
+      const cyanVioletGlowTex = createRadialGlowTexture(
+        'rgba(224, 242, 254, 0.95)',
+        'rgba(0, 242, 254, 0.52)',
+        'rgba(139, 92, 246, 0.18)'
+      );
+      const deepVioletGlowTex = createRadialGlowTexture(
+        'rgba(192, 132, 252, 0.78)',
+        'rgba(139, 92, 246, 0.36)',
+        'rgba(6, 182, 212, 0.08)'
+      );
+
+      // Ambient Cosmic Particles (Decorative Scene Layer)
+      const particleCount = 440;
       const particleGeo = new THREE.BufferGeometry();
       const particlePositions = new Float32Array(particleCount * 3);
       for (let i = 0; i < particleCount; i++) {
-        particlePositions[i * 3] = (Math.random() - 0.5) * 220;
-        particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 160;
-        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 220;
+        particlePositions[i * 3] = (Math.random() - 0.5) * 230;
+        particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 165;
+        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 230;
       }
       particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
       const particleMat = new THREE.PointsMaterial({
         color: 0x38bdf8,
-        size: 0.65,
+        size: 0.68,
         transparent: true,
-        opacity: 0.42
+        opacity: 0.44
       });
       const particleSystem = new THREE.Points(particleGeo, particleMat);
       scene.add(particleSystem);
@@ -1498,33 +1647,155 @@
       scene.add(edgesGroup);
       scene.add(nodesGroup);
 
+      // =========================================================================
+      // LUXURY FUTURISTIC CENTRAL CORE ASSEMBLY (Inspired by Reference Design)
+      // =========================================================================
       const coreRingsGroup = new THREE.Group();
-      const ringGeo1 = new THREE.TorusGeometry(5.6, 0.06, 12, 64);
-      const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.45 });
+      scene.add(coreRingsGroup);
+
+      // 1. Multi-layered Volumetric Aura Sprites around the Central Core
+      const coreGlowMat1 = new THREE.SpriteMaterial({
+        map: cyanVioletGlowTex,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        opacity: 0.82,
+        depthWrite: false
+      });
+      const coreGlowSprite1 = new THREE.Sprite(coreGlowMat1);
+      coreGlowSprite1.scale.set(17.5, 17.5, 1);
+      coreRingsGroup.add(coreGlowSprite1);
+
+      const coreGlowMat2 = new THREE.SpriteMaterial({
+        map: deepVioletGlowTex,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        opacity: 0.65,
+        depthWrite: false
+      });
+      const coreGlowSprite2 = new THREE.Sprite(coreGlowMat2);
+      coreGlowSprite2.scale.set(24, 24, 1);
+      coreRingsGroup.add(coreGlowSprite2);
+
+      // 2. Outer Crystalline Geodesic Lattice & Inner Nebula Energy Cage
+      const crystalShellGeo = new THREE.IcosahedronGeometry(4.25, 2);
+      const crystalShellMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.34,
+        blending: THREE.AdditiveBlending
+      });
+      const crystalShellMesh = new THREE.Mesh(crystalShellGeo, crystalShellMat);
+      coreRingsGroup.add(crystalShellMesh);
+
+      const innerCageGeo = new THREE.DodecahedronGeometry(3.75, 1);
+      const innerCageMat = new THREE.MeshBasicMaterial({
+        color: 0xc084fc,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.28,
+        blending: THREE.AdditiveBlending
+      });
+      const innerCageMesh = new THREE.Mesh(innerCageGeo, innerCageMat);
+      coreRingsGroup.add(innerCageMesh);
+
+      // 3. Three Gyroscopic Orbital Tracks + Orbiting Energy Satellites
+      const ringGeo1 = new THREE.TorusGeometry(5.8, 0.075, 16, 80);
+      const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00f2fe, transparent: true, opacity: 0.62, blending: THREE.AdditiveBlending });
       const ringMesh1 = new THREE.Mesh(ringGeo1, ringMat1);
-      ringMesh1.rotation.x = Math.PI / 2.6;
+      ringMesh1.rotation.x = Math.PI / 2.5;
+      const satGeo = new THREE.SphereGeometry(0.26, 12, 12);
+      const satMesh1 = new THREE.Mesh(satGeo, new THREE.MeshBasicMaterial({ color: 0xe0f2fe }));
+      satMesh1.position.set(5.8, 0, 0);
+      ringMesh1.add(satMesh1);
       coreRingsGroup.add(ringMesh1);
 
-      const ringGeo2 = new THREE.TorusGeometry(7.2, 0.05, 12, 64);
-      const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.32 });
+      const ringGeo2 = new THREE.TorusGeometry(7.5, 0.06, 16, 80);
+      const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.48, blending: THREE.AdditiveBlending });
       const ringMesh2 = new THREE.Mesh(ringGeo2, ringMat2);
-      ringMesh2.rotation.y = Math.PI / 3;
-      ringMesh2.rotation.x = -Math.PI / 4;
+      ringMesh2.rotation.y = Math.PI / 3.2;
+      ringMesh2.rotation.x = -Math.PI / 3.8;
+      const satMesh2 = new THREE.Mesh(satGeo, new THREE.MeshBasicMaterial({ color: 0xf0abfc }));
+      satMesh2.position.set(0, 7.5, 0);
+      ringMesh2.add(satMesh2);
       coreRingsGroup.add(ringMesh2);
-      scene.add(coreRingsGroup);
+
+      const ringGeo3 = new THREE.TorusGeometry(9.3, 0.045, 12, 88);
+      const ringMat3 = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending });
+      const ringMesh3 = new THREE.Mesh(ringGeo3, ringMat3);
+      ringMesh3.rotation.x = Math.PI / 1.9;
+      ringMesh3.rotation.y = -Math.PI / 5;
+      coreRingsGroup.add(ringMesh3);
+
+      // 4. Decorative Polar Energy Axis Beam & Holographic Base Platform Rings
+      const coreDecorativeGroup = new THREE.Group();
+      const beamGeo = new THREE.CylinderGeometry(0.14, 0.65, 38, 16, 1, true);
+      const beamMat = new THREE.MeshBasicMaterial({
+        color: 0x22d3ee,
+        transparent: true,
+        opacity: 0.14,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const polarBeamMesh = new THREE.Mesh(beamGeo, beamMat);
+      coreDecorativeGroup.add(polarBeamMesh);
+
+      const baseHoloring1 = new THREE.Mesh(
+        new THREE.RingGeometry(4.8, 5.05, 64),
+        new THREE.MeshBasicMaterial({ color: 0x00f2fe, side: THREE.DoubleSide, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending })
+      );
+      baseHoloring1.rotation.x = Math.PI / 2;
+      baseHoloring1.position.y = -5.8;
+      coreDecorativeGroup.add(baseHoloring1);
+
+      const baseHoloring2 = new THREE.Mesh(
+        new THREE.RingGeometry(6.8, 7.0, 64),
+        new THREE.MeshBasicMaterial({ color: 0x8b5cf6, side: THREE.DoubleSide, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending })
+      );
+      baseHoloring2.rotation.x = Math.PI / 2;
+      baseHoloring2.position.y = -5.8;
+      coreDecorativeGroup.add(baseHoloring2);
+
+      coreRingsGroup.add(coreDecorativeGroup);
+
+      // =========================================================================
+      // 3D ACTIVE NODE SELECTION RETICLE (Highlights Selected Node in 3D Space)
+      // =========================================================================
+      const selectionReticleGroup = new THREE.Group();
+      const selRingOuter = new THREE.Mesh(
+        new THREE.RingGeometry(2.1, 2.32, 48),
+        new THREE.MeshBasicMaterial({ color: 0x00f2fe, side: THREE.DoubleSide, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })
+      );
+      const selRingInner = new THREE.Mesh(
+        new THREE.RingGeometry(1.65, 1.76, 36),
+        new THREE.MeshBasicMaterial({ color: 0xc084fc, side: THREE.DoubleSide, transparent: true, opacity: 0.65, blending: THREE.AdditiveBlending })
+      );
+      const selAuraSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: cyanVioletGlowTex,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false
+      }));
+      selAuraSprite.scale.set(8.5, 8.5, 1);
+      selectionReticleGroup.add(selRingOuter);
+      selectionReticleGroup.add(selRingInner);
+      selectionReticleGroup.add(selAuraSprite);
+      scene.add(selectionReticleGroup);
 
       const nodeObjectsMap = new Map();
       const edgeObjectsList = [];
 
       const TYPE_STYLE = {
-        core: { color: 0x22d3ee, emissive: 0x0891b2, radius: 3.3, badgeBg: 'bg-cyan-500/25 text-cyan-200 border-cyan-400/50', labelAr: 'النواة المركزية', icon: '⚛️' },
-        section: { color: 0x06b6d4, emissive: 0x0e7490, radius: 2.1, badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40', labelAr: 'فصل رئيسي', icon: '💠' },
-        concept: { color: 0x8b5cf6, emissive: 0x5b21b6, radius: 1.45, badgeBg: 'bg-violet-500/20 text-violet-300 border-violet-400/40', labelAr: 'مفهوم علمي', icon: '💡' },
-        explanation: { color: 0x3b82f6, emissive: 0x1d4ed8, radius: 1.3, badgeBg: 'bg-sky-500/20 text-sky-300 border-sky-400/40', labelAr: 'تفسير وآلية', icon: '📖' },
-        image: { color: 0xec4899, emissive: 0xbe185d, radius: 1.65, badgeBg: 'bg-pink-500/20 text-pink-300 border-pink-400/40', labelAr: 'صورة علمية', icon: '🖼️' },
-        evidence: { color: 0x10b981, emissive: 0x047857, radius: 1.38, badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40', labelAr: 'دليل وبيانات', icon: '📊' },
-        data: { color: 0x10b981, emissive: 0x047857, radius: 1.38, badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40', labelAr: 'بيانات تجريبية', icon: '📊' },
-        reference: { color: 0xf59e0b, emissive: 0xb45309, radius: 1.25, badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-400/40', labelAr: 'مرجع موثق', icon: '📚' }
+        core: { color: 0x00f2fe, emissive: 0x0284c7, radius: 3.35, badgeBg: 'bg-cyan-500/25 text-cyan-200 border-cyan-400/50', labelAr: 'النواة المركزية', icon: '⚛️' },
+        section: { color: 0x06b6d4, emissive: 0x0e7490, radius: 2.15, badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40', labelAr: 'فصل رئيسي', icon: '💠' },
+        concept: { color: 0x8b5cf6, emissive: 0x5b21b6, radius: 1.48, badgeBg: 'bg-violet-500/20 text-violet-300 border-violet-400/40', labelAr: 'مفهوم علمي', icon: '💡' },
+        explanation: { color: 0x3b82f6, emissive: 0x1d4ed8, radius: 1.32, badgeBg: 'bg-sky-500/20 text-sky-300 border-sky-400/40', labelAr: 'تفسير وآلية', icon: '📖' },
+        image: { color: 0xec4899, emissive: 0xbe185d, radius: 1.68, badgeBg: 'bg-pink-500/20 text-pink-300 border-pink-400/40', labelAr: 'صورة علمية', icon: '🖼️' },
+        evidence: { color: 0x10b981, emissive: 0x047857, radius: 1.4, badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40', labelAr: 'دليل وبيانات', icon: '📊' },
+        data: { color: 0x10b981, emissive: 0x047857, radius: 1.4, badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40', labelAr: 'بيانات تجريبية', icon: '📊' },
+        reference: { color: 0xf59e0b, emissive: 0xb45309, radius: 1.28, badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-400/40', labelAr: 'مرجع موثق', icon: '📚' }
       };
 
       function isNodeVisible(node) {
@@ -1543,12 +1814,12 @@
       }
 
       function createGeometryForType(type, radius) {
-        if (type === 'core') return new THREE.IcosahedronGeometry(radius, 3);
+        if (type === 'core') return new THREE.IcosahedronGeometry(radius, 4);
         if (type === 'section') return new THREE.OctahedronGeometry(radius, 2);
         if (type === 'image') return new THREE.BoxGeometry(radius * 1.6, radius * 1.15, radius * 0.45);
         if (type === 'evidence' || type === 'data') return new THREE.OctahedronGeometry(radius, 1);
         if (type === 'reference') return new THREE.TetrahedronGeometry(radius * 1.15, 1);
-        return new THREE.SphereGeometry(radius, 24, 24);
+        return new THREE.SphereGeometry(radius, 28, 28);
       }
 
       function rebuildSceneGraph() {
@@ -1572,9 +1843,9 @@
           const mat = new THREE.MeshStandardMaterial({
             color: style.color,
             emissive: style.emissive,
-            emissiveIntensity: node.type === 'core' ? 0.75 : 0.45,
-            roughness: 0.25,
-            metalness: 0.35,
+            emissiveIntensity: node.type === 'core' ? 0.92 : 0.48,
+            roughness: node.type === 'core' ? 0.15 : 0.25,
+            metalness: node.type === 'core' ? 0.55 : 0.35,
             transparent: true,
             opacity: 1
           });
@@ -1586,12 +1857,12 @@
           const childCount = getChildrenCount(node.id);
           let halo = null;
           if (node.type === 'core' || node.type === 'section' || childCount > 0) {
-            const haloGeo = new THREE.RingGeometry(style.radius * 1.25, style.radius * 1.42, 32);
+            const haloGeo = new THREE.RingGeometry(style.radius * 1.28, style.radius * 1.45, 40);
             const haloMat = new THREE.MeshBasicMaterial({
               color: style.color,
               side: THREE.DoubleSide,
               transparent: true,
-              opacity: node.expanded === false ? 0.75 : 0.28
+              opacity: node.expanded === false ? 0.78 : 0.32
             });
             halo = new THREE.Mesh(haloGeo, haloMat);
             mesh.add(halo);
@@ -1608,7 +1879,7 @@
             domEl.innerHTML = `
               <div class="relative rounded-xl overflow-hidden bg-slate-950 mb-1.5 border border-slate-800">
                 <img src="${node.imageUrl}" alt="${node.titleAr}" class="w-full h-20 object-contain pointer-events-none" />
-                <span class="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-pink-500/80 text-white font-bold">🖼️ صورة علمية</span>
+                <span class="node-dec-icon absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-pink-500/80 text-white font-bold">🖼️ صورة علمية</span>
               </div>
               <div class="text-[11px] font-bold text-white leading-tight line-clamp-2">${node.titleAr}</div>
               <div class="flex items-center justify-between mt-1.5 pt-1 border-t border-slate-800/80 text-[10px]">
@@ -1620,24 +1891,24 @@
             const isCore = node.type === 'core';
             const isSection = node.type === 'section';
             const sizeClasses = isCore
-              ? 'px-3.5 py-2 text-xs sm:text-sm font-extrabold border-cyan-400/70 bg-slate-950/90'
+              ? 'px-3.5 py-1.5 text-xs sm:text-sm font-extrabold border-cyan-400/75 bg-slate-950/90'
               : isSection
                 ? 'px-3 py-1.5 text-xs font-bold border-cyan-400/40 bg-slate-900/90'
                 : 'px-2.5 py-1 text-[11px] font-semibold border-slate-700/80 bg-slate-900/80';
 
             const branchIndicator = childCount > 0
-              ? `<span data-action="toggle-branch" data-node-id="${node.id}" title="فتح أو طي الفروع (${childCount})" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${node.expanded === false ? 'bg-amber-500/30 text-amber-200 border border-amber-400/50' : 'bg-cyan-500/20 text-cyan-200'} hover:scale-110 transition">${node.expanded === false ? '+' + childCount : '−'}</span>`
+              ? `<span data-action="toggle-branch" data-node-id="${node.id}" title="فتح أو طي الفروع (${childCount})" class="node-dec-icon ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${node.expanded === false ? 'bg-amber-500/30 text-amber-200 border border-amber-400/50' : 'bg-cyan-500/20 text-cyan-200'} hover:scale-110 transition">${node.expanded === false ? '+' + childCount : '−'}</span>`
               : '';
 
-            domEl.className += ` glass-pill ${sizeClasses} flex items-center gap-1.5 max-w-[210px] sm:max-w-[240px]`;
+            domEl.className += ` glass-pill ${sizeClasses} flex items-center gap-1.5 max-w-[205px] sm:max-w-[235px]`;
             domEl.innerHTML = `
-              <span class="shrink-0">${style.icon}</span>
+              <span class="node-dec-icon shrink-0">${style.icon}</span>
               <span class="truncate text-slate-100">${node.titleAr}</span>
               ${branchIndicator}
             `;
           }
 
-          if (!visible) {
+          if (!visible || node.id === 'core') {
             domEl.style.display = 'none';
           }
 
@@ -1662,6 +1933,8 @@
             halo,
             domEl,
             data: node,
+            baseRadius: style.radius,
+            desiredScale: 1.0,
             targetPos: new THREE.Vector3(node.x || 0, node.y || 0, node.z || 0)
           });
         });
@@ -1677,6 +1950,7 @@
 
         updateHUDStats();
         applyKnowledgePathHighlight(selectedNodeId);
+        applyFloatingPreferences();
       }
 
       function create3DEdge(sourceId, targetId, isHierarchical, linkData) {
@@ -1697,18 +1971,18 @@
         const mat = new THREE.LineBasicMaterial({
           color: color,
           transparent: true,
-          opacity: isHierarchical ? 0.42 : 0.58
+          opacity: isHierarchical ? 0.45 : 0.62
         });
 
         const line = new THREE.Line(geo, mat);
         line.visible = visible;
         edgesGroup.add(line);
 
-        const pulseGeo = new THREE.SphereGeometry(0.32, 8, 8);
+        const pulseGeo = new THREE.SphereGeometry(0.34, 10, 10);
         const pulseMat = new THREE.MeshBasicMaterial({
-          color: isHierarchical ? 0x38bdf8 : 0xf472b6,
+          color: isHierarchical ? 0x00f2fe : 0xf472b6,
           transparent: true,
-          opacity: 0.85
+          opacity: 0.9
         });
         const pulseMesh = new THREE.Mesh(pulseGeo, pulseMat);
         pulseMesh.visible = visible && !reducedMotion;
@@ -1748,8 +2022,63 @@
       }
 
       // =========================================================================
-      // 5. KNOWLEDGE PATH ILLUMINATION
+      // 5. SMART FLOATING ELEMENTS CONTROL & KNOWLEDGE PATH ILLUMINATION
       // =========================================================================
+      function applyFloatingPreferences() {
+        // 1. Master Essential Cards Visibility (#labels-layer)
+        labelsLayer.classList.toggle('floating-layer-hidden', !floatingPrefs.showEssentialCards);
+
+        // 2. Decorative Badges inside Cards
+        document.body.classList.toggle('hide-decorative-badges', !floatingPrefs.showNodeBadges);
+
+        // 3. Decorative 3D & HUD Elements
+        document.body.classList.toggle('hide-decorative-ui', !floatingPrefs.showDecorativeScene);
+        coreDecorativeGroup.visible = floatingPrefs.showDecorativeScene;
+        particleSystem.visible = floatingPrefs.showDecorativeScene;
+
+        // 4. Sync UI Buttons & Checkboxes
+        const mainBtn = document.getElementById('btn-toggle-floating');
+        const iconEl = document.getElementById('floating-toggle-icon');
+        const labelEl = document.getElementById('floating-toggle-label');
+        if (mainBtn && iconEl && labelEl) {
+          if (floatingPrefs.showEssentialCards) {
+            iconEl.textContent = floatingPrefs.focusSelectedOnly ? '🎯' : '👁️';
+            labelEl.textContent = floatingPrefs.focusSelectedOnly ? 'العائم: وضع التركيز' : 'العناصر العائمة: ظاهرة';
+            mainBtn.className = 'px-2.5 py-1.5 text-xs font-bold flex items-center gap-1.5 text-cyan-200 bg-cyan-500/20 hover:bg-cyan-500/30 transition';
+          } else {
+            iconEl.textContent = '🙈';
+            labelEl.textContent = 'العناصر العائمة: مخفية';
+            mainBtn.className = 'px-2.5 py-1.5 text-xs font-bold flex items-center gap-1.5 text-slate-300 bg-slate-800/90 hover:bg-slate-700/80 transition';
+          }
+        }
+
+        const quickEyeBottomIcon = document.getElementById('quick-eye-bottom-icon');
+        if (quickEyeBottomIcon) {
+          quickEyeBottomIcon.textContent = floatingPrefs.showEssentialCards ? '👁️' : '🙈';
+        }
+        const chkEss = document.getElementById('chk-layer-essential');
+        const chkFoc = document.getElementById('chk-layer-focus-only');
+        const chkBdg = document.getElementById('chk-layer-badges');
+        const chkDec = document.getElementById('chk-layer-decorative');
+        if (chkEss) chkEss.checked = floatingPrefs.showEssentialCards;
+        if (chkFoc) chkFoc.checked = floatingPrefs.focusSelectedOnly;
+        if (chkBdg) chkBdg.checked = floatingPrefs.showNodeBadges;
+        if (chkDec) chkDec.checked = floatingPrefs.showDecorativeScene;
+
+        // 5. Apply per-node Focus Mode visibility if enabled
+        const activeSet = getConnectedPathSet(selectedNodeId);
+        nodeObjectsMap.forEach((obj, id) => {
+          if (floatingPrefs.focusSelectedOnly && floatingPrefs.showEssentialCards) {
+            const keepVisible = (id === selectedNodeId) || (selectedNodeId !== 'core' && activeSet.has(id));
+            obj.domEl.classList.toggle('tag-hidden-by-mode', !keepVisible);
+          } else {
+            obj.domEl.classList.remove('tag-hidden-by-mode');
+          }
+        });
+
+        saveUIPrefs();
+      }
+
       function getConnectedPathSet(focusId) {
         const activeIds = new Set();
         if (!focusId) return activeIds;
@@ -1786,12 +2115,13 @@
         if (!focusId || (focusId === 'core' && filterValue === 'all')) {
           nodeObjectsMap.forEach((obj, id) => {
             obj.mesh.material.opacity = 1;
-            obj.mesh.material.emissiveIntensity = obj.data.type === 'core' ? 0.75 : 0.45;
+            obj.mesh.material.emissiveIntensity = obj.data.type === 'core' ? 0.95 : 0.48;
+            obj.desiredScale = id === 'core' ? 1.06 : 1.0;
             obj.domEl.classList.remove('dimmed', 'highlighted');
             if (id === focusId) obj.domEl.classList.add('highlighted');
           });
           edgeObjectsList.forEach(edge => {
-            edge.line.material.opacity = edge.isHierarchical ? 0.42 : 0.58;
+            edge.line.material.opacity = edge.isHierarchical ? 0.46 : 0.62;
             edge.pulseMesh.visible = edge.line.visible && !reducedMotion;
           });
           return;
@@ -1800,22 +2130,24 @@
         const activeSet = getConnectedPathSet(focusId);
 
         nodeObjectsMap.forEach((obj, id) => {
+          const isSelected = id === focusId;
           const inPath = activeSet.has(id);
-          obj.mesh.material.opacity = inPath ? 1.0 : 0.22;
-          obj.mesh.material.emissiveIntensity = id === focusId ? 0.95 : (inPath ? 0.6 : 0.15);
+          obj.mesh.material.opacity = inPath ? 1.0 : 0.24;
+          obj.mesh.material.emissiveIntensity = isSelected ? 1.15 : (inPath ? 0.68 : 0.16);
+          obj.desiredScale = isSelected ? 1.24 : (inPath ? 1.08 : 0.92);
           obj.domEl.classList.toggle('dimmed', !inPath);
-          obj.domEl.classList.toggle('highlighted', id === focusId);
+          obj.domEl.classList.toggle('highlighted', isSelected);
         });
 
         edgeObjectsList.forEach(edge => {
           const activeEdge = activeSet.has(edge.sourceId) && activeSet.has(edge.targetId);
-          edge.line.material.opacity = activeEdge ? 0.92 : 0.1;
+          edge.line.material.opacity = activeEdge ? 0.95 : 0.11;
           edge.pulseMesh.visible = edge.line.visible && activeEdge && !reducedMotion;
         });
       }
 
       // =========================================================================
-      // 6. CAMERA CONTROLLER & SMOOTH TRANSITIONS
+      // 6. DAMPED ANTI-JITTER CAMERA CONTROLLER & SMOOTH TRANSITIONS
       // =========================================================================
       const camState = {
         target: new THREE.Vector3(0, 0, 0),
@@ -1828,15 +2160,17 @@
         desiredPhi: 1.22
       };
 
-      function updateCameraFromSpherical(immediate) {
-        const lerpFactor = (immediate || reducedMotion) ? 1.0 : 0.085;
+      function updateCameraFromSpherical(immediate, dt = 0.016) {
+        const decay = 7.5;
+        const lerpFactor = (immediate || reducedMotion) ? 1.0 : Math.min(1.0, 1.0 - Math.exp(-decay * dt));
+
         camState.target.lerp(camState.desiredTarget, lerpFactor);
         camState.radius += (camState.desiredRadius - camState.radius) * lerpFactor;
         camState.theta += (camState.desiredTheta - camState.theta) * lerpFactor;
         camState.phi += (camState.desiredPhi - camState.phi) * lerpFactor;
 
         camState.phi = Math.max(0.22, Math.min(Math.PI - 0.22, camState.phi));
-        camState.radius = Math.max(16, Math.min(165, camState.radius));
+        camState.radius = Math.max(15, Math.min(165, camState.radius));
 
         const sinPhiRadius = Math.sin(camState.phi) * camState.radius;
         camera.position.x = camState.target.x + sinPhiRadius * Math.sin(camState.theta);
@@ -1864,11 +2198,11 @@
         camState.desiredTarget.set(pos.x, pos.y, pos.z);
 
         if (nodeId === 'core') {
-          camState.desiredRadius = 68;
+          camState.desiredRadius = 66;
         } else if (obj.data.type === 'section') {
-          camState.desiredRadius = 42;
+          camState.desiredRadius = 40;
         } else {
-          camState.desiredRadius = 30;
+          camState.desiredRadius = 28;
         }
       }
 
@@ -1894,7 +2228,7 @@
       }
 
       // =========================================================================
-      // 7. UNIFIED POINTER & MULTI-TOUCH INTERACTION ENGINE
+      // 7. UNIFIED POINTER & MULTI-TOUCH INTERACTION ENGINE (Mobile Optimized)
       // =========================================================================
       const raycaster = new THREE.Raycaster();
       const pointerNDC = new THREE.Vector2();
@@ -1913,6 +2247,7 @@
         longPressTimer: null,
         longPressStart: 0,
         hoverTargetNodeId: null,
+        hovered3DNodeId: null,
         activePointers: new Map(),
         initialPinchDist: 0,
         initialRadius: 68
@@ -1925,13 +2260,17 @@
       }
 
       function hitTestNode(clientX, clientY) {
-        const el = document.elementFromPoint(clientX, clientY);
-        if (el) {
-          const card = el.closest('.node-floating-tag');
-          if (card && card.dataset.nodeId) {
-            return card.dataset.nodeId;
+        // 1. Check visible floating DOM card only if floating cards are visible
+        if (floatingPrefs.showEssentialCards) {
+          const el = document.elementFromPoint(clientX, clientY);
+          if (el) {
+            const card = el.closest('.node-floating-tag');
+            if (card && card.dataset.nodeId && !card.classList.contains('tag-hidden-by-mode')) {
+              return card.dataset.nodeId;
+            }
           }
         }
+        // 2. Raycast 3D Meshes directly (works whether floating cards are shown or hidden!)
         setPointerNDC(clientX, clientY);
         raycaster.setFromCamera(pointerNDC, camera);
         const visibleMeshes = [];
@@ -2040,6 +2379,7 @@
 
       renderer.domElement.addEventListener('pointerdown', (e) => {
         hideContextMenu();
+        document.getElementById('floating-layers-popover').classList.add('hidden');
         interaction.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
         if (interaction.activePointers.size === 2) {
@@ -2076,17 +2416,27 @@
         if (interaction.mode === 'PINCH' && interaction.activePointers.size === 2) {
           const pts = Array.from(interaction.activePointers.values());
           const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-          if (interaction.initialPinchDist > 10) {
-            const scale = interaction.initialPinchDist / Math.max(20, dist);
-            camState.desiredRadius = Math.max(18, Math.min(160, interaction.initialRadius * scale));
+          if (interaction.initialPinchDist > 12) {
+            const scale = interaction.initialPinchDist / Math.max(24, dist);
+            camState.desiredRadius = Math.max(16, Math.min(160, interaction.initialRadius * scale));
           }
           const midX = (pts[0].x + pts[1].x) * 0.5;
           const midY = (pts[0].y + pts[1].y) * 0.5;
           const dx = midX - interaction.lastX;
           const dy = midY - interaction.lastY;
-          panCameraByScreenDelta(dx, dy);
+          if (Math.hypot(dx, dy) > 0.8) {
+            panCameraByScreenDelta(dx, dy);
+          }
           interaction.lastX = midX;
           interaction.lastY = midY;
+          return;
+        }
+
+        // Subtle 3D hover cursor feedback when idle on desktop
+        if (interaction.mode === 'IDLE' && e.pointerType === 'mouse') {
+          const hoverId = hitTestNode(e.clientX, e.clientY);
+          interaction.hovered3DNodeId = hoverId;
+          renderer.domElement.style.cursor = hoverId ? 'pointer' : 'grab';
           return;
         }
 
@@ -2094,8 +2444,9 @@
 
         const moveDist = Math.hypot(e.clientX - interaction.startX, e.clientY - interaction.startY);
 
+        // Generous 9px threshold on touch so tapping a node never accidentally drags
         if (interaction.mode === 'NODE_PENDING') {
-          if (moveDist > 7) {
+          if (moveDist > 9) {
             cancelLongPressTimer();
             interaction.mode = 'NODE_DRAG';
           }
@@ -2136,16 +2487,17 @@
           return;
         }
 
+        const dx = e.clientX - interaction.lastX;
+        const dy = e.clientY - interaction.lastY;
+        // Deadzone filter to eliminate micro-jitter on touch screens
+        if (Math.hypot(dx, dy) < 0.6) return;
+
         if (interaction.mode === 'ORBIT') {
-          const dx = e.clientX - interaction.lastX;
-          const dy = e.clientY - interaction.lastY;
-          camState.desiredTheta -= dx * 0.0065;
-          camState.desiredPhi -= dy * 0.0065;
+          camState.desiredTheta -= dx * 0.0062;
+          camState.desiredPhi -= dy * 0.0062;
           interaction.lastX = e.clientX;
           interaction.lastY = e.clientY;
         } else if (interaction.mode === 'PAN') {
-          const dx = e.clientX - interaction.lastX;
-          const dy = e.clientY - interaction.lastY;
           panCameraByScreenDelta(dx, dy);
           interaction.lastX = e.clientX;
           interaction.lastY = e.clientY;
@@ -2186,7 +2538,7 @@
 
         if (interaction.mode === 'ORBIT' || interaction.mode === 'PAN') {
           const moveDist = Math.hypot(e.clientX - interaction.startX, e.clientY - interaction.startY);
-          if (moveDist < 5 && !isLinkMode) {
+          if (moveDist < 6 && !isLinkMode) {
             applyKnowledgePathHighlight('core');
           }
         }
@@ -2202,7 +2554,7 @@
 
       renderer.domElement.addEventListener('wheel', (e) => {
         e.preventDefault();
-        camState.desiredRadius = Math.max(16, Math.min(165, camState.desiredRadius + e.deltaY * 0.045));
+        camState.desiredRadius = Math.max(15, Math.min(165, camState.desiredRadius + e.deltaY * 0.042));
       }, { passive: false });
 
       renderer.domElement.addEventListener('contextmenu', (e) => {
@@ -2217,7 +2569,7 @@
         const right = new THREE.Vector3();
         const up = new THREE.Vector3();
         camera.matrix.extractBasis(right, up, new THREE.Vector3());
-        const factor = camState.radius * 0.0014;
+        const factor = camState.radius * 0.00135;
         camState.desiredTarget.addScaledVector(right, -dx * factor);
         camState.desiredTarget.addScaledVector(up, dy * factor);
       }
@@ -2267,6 +2619,7 @@
 
         selectedNodeId = nodeId;
         applyKnowledgePathHighlight(nodeId);
+        applyFloatingPreferences();
         renderInspectorPanel(node);
         renderBreadcrumbs(node);
 
@@ -2884,7 +3237,7 @@
       }
 
       // =========================================================================
-      // 14. 3D PROJECTION LOOP & ANIMATION
+      // 14. 3D PROJECTION LOOP & DYNAMIC ANIMATION
       // =========================================================================
       const tempVec = new THREE.Vector3();
 
@@ -2902,27 +3255,74 @@
       }
 
       let clockStart = performance.now();
+      let lastFrameTime = performance.now();
 
       function animate(now) {
         requestAnimationFrame(animate);
+        const dt = Math.min(0.05, Math.max(0.001, (now - lastFrameTime) * 0.001));
+        lastFrameTime = now;
         const elapsed = (now - clockStart) * 0.001;
 
-        updateCameraFromSpherical(false);
+        updateCameraFromSpherical(false, dt);
+
+        // Luxury Central Core & Orbital Animation
+        const coreObj = nodeObjectsMap.get('core');
+        if (coreObj) {
+          coreRingsGroup.position.copy(coreObj.mesh.position);
+        }
 
         if (!reducedMotion) {
-          ringMesh1.rotation.z = elapsed * 0.22;
-          ringMesh2.rotation.z = -elapsed * 0.16;
-          particleSystem.rotation.y = elapsed * 0.015;
+          ringMesh1.rotation.z = elapsed * 0.28;
+          ringMesh2.rotation.z = -elapsed * 0.21;
+          ringMesh3.rotation.z = elapsed * 0.14;
+          crystalShellMesh.rotation.y = elapsed * 0.18;
+          crystalShellMesh.rotation.x = elapsed * 0.11;
+          innerCageMesh.rotation.y = -elapsed * 0.26;
+          innerCageMesh.rotation.z = elapsed * 0.15;
+          particleSystem.rotation.y = elapsed * 0.012;
+
+          // Subtle breathing of multi-layer volumetric aura around Central Core
+          const coreSelectedBoost = selectedNodeId === 'core' ? 1.18 : 1.0;
+          const breath1 = (17.2 + Math.sin(elapsed * 2.1) * 1.4) * coreSelectedBoost;
+          const breath2 = (23.5 + Math.cos(elapsed * 1.5) * 1.8) * coreSelectedBoost;
+          coreGlowSprite1.scale.set(breath1, breath1, 1);
+          coreGlowSprite2.scale.set(breath2, breath2, 1);
+          coreGlowMat1.opacity = selectedNodeId === 'core' ? 0.92 : 0.76;
+        }
+
+        // Update 3D Selection Reticle around currently selected node
+        const selObj = nodeObjectsMap.get(selectedNodeId);
+        if (selObj && selObj.mesh.visible) {
+          selectionReticleGroup.visible = true;
+          selectionReticleGroup.position.lerp(selObj.mesh.position, reducedMotion ? 1.0 : 0.24);
+          selectionReticleGroup.lookAt(camera.position);
+          const rScale = (selObj.baseRadius || 1.5) * 0.82;
+          selectionReticleGroup.scale.setScalar(rScale);
+          if (!reducedMotion) {
+            selRingOuter.rotation.z = elapsed * 0.65;
+            selRingInner.rotation.z = -elapsed * 0.95;
+          }
+        } else {
+          selectionReticleGroup.visible = false;
         }
 
         let anyNodeMoved = false;
-        nodeObjectsMap.forEach((obj) => {
+        nodeObjectsMap.forEach((obj, id) => {
           if (!obj.mesh.visible) {
             obj.domEl.style.display = 'none';
             return;
           }
 
-          if (interaction.mode !== 'NODE_DRAG' || interaction.activeNodeId !== obj.data.id) {
+          // Smooth node scale transition on selection / hover
+          const isHovered = interaction.hovered3DNodeId === id;
+          const targetScale = (obj.desiredScale || 1.0) * (isHovered ? 1.12 : 1.0);
+          const currentScale = obj.mesh.scale.x;
+          if (Math.abs(currentScale - targetScale) > 0.002) {
+            const nextScale = currentScale + (targetScale - currentScale) * (reducedMotion ? 1.0 : 0.16);
+            obj.mesh.scale.setScalar(nextScale);
+          }
+
+          if (interaction.mode !== 'NODE_DRAG' || interaction.activeNodeId !== id) {
             const distSq = obj.mesh.position.distanceToSquared(obj.targetPos);
             if (distSq > 0.001) {
               obj.mesh.position.lerp(obj.targetPos, reducedMotion ? 1.0 : 0.12);
@@ -2937,12 +3337,13 @@
             obj.halo.lookAt(camera.position);
           }
 
+          // Project 3D position to Floating HTML Tag (even if hidden, so when shown it's already in place!)
           const labelPos3D = obj.mesh.position.clone();
           const style = TYPE_STYLE[obj.data.type] || TYPE_STYLE.concept;
-          labelPos3D.y += style.radius + (obj.data.type === 'image' ? 2.4 : 1.2);
+          labelPos3D.y += style.radius + (obj.data.type === 'image' ? 2.4 : 1.25);
 
           const proj = projectToScreen(labelPos3D);
-          if (proj.behind || proj.x < -180 || proj.x > window.innerWidth + 180 || proj.y < -120 || proj.y > window.innerHeight + 120) {
+          if (id === 'core' || proj.behind || proj.x < -180 || proj.x > window.innerWidth + 180 || proj.y < -120 || proj.y > window.innerHeight + 120) {
             obj.domEl.style.display = 'none';
           } else {
             obj.domEl.style.display = '';
@@ -2993,6 +3394,63 @@
           camera.aspect = window.innerWidth / window.innerHeight;
           camera.updateProjectionMatrix();
           renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Master One-Click Floating Elements Toggle
+        document.getElementById('btn-toggle-floating').addEventListener('click', () => {
+          floatingPrefs.showEssentialCards = !floatingPrefs.showEssentialCards;
+          applyFloatingPreferences();
+          showToast(
+            floatingPrefs.showEssentialCards
+              ? 'تم إظهار أسماء العقد والبطاقات العائمة فوق المشهد 👁️'
+              : 'تم إخفاء البطاقات العائمة لإبراز النواة والمشهد ثلاثي الأبعاد 🙈'
+          );
+        });
+
+        // Smart Floating Layers Menu Popover
+        const layersPopover = document.getElementById('floating-layers-popover');
+        document.getElementById('btn-floating-layers-menu').addEventListener('click', (e) => {
+          e.stopPropagation();
+          layersPopover.classList.toggle('hidden');
+        });
+        document.getElementById('btn-close-layers-popover').addEventListener('click', () => {
+          layersPopover.classList.add('hidden');
+        });
+
+        document.getElementById('chk-layer-essential').addEventListener('change', (e) => {
+          floatingPrefs.showEssentialCards = e.target.checked;
+          applyFloatingPreferences();
+        });
+        document.getElementById('chk-layer-focus-only').addEventListener('change', (e) => {
+          floatingPrefs.focusSelectedOnly = e.target.checked;
+          if (e.target.checked) floatingPrefs.showEssentialCards = true;
+          applyFloatingPreferences();
+          showToast(e.target.checked ? 'وضع التركيز الذكي: إظهار بطاقة العقدة المحددة ومسارها فقط 🎯' : 'تم إظهار جميع بطاقات العقد');
+        });
+        document.getElementById('chk-layer-badges').addEventListener('change', (e) => {
+          floatingPrefs.showNodeBadges = e.target.checked;
+          applyFloatingPreferences();
+        });
+        document.getElementById('chk-layer-decorative').addEventListener('change', (e) => {
+          floatingPrefs.showDecorativeScene = e.target.checked;
+          applyFloatingPreferences();
+        });
+
+        document.getElementById('btn-show-all-layers').addEventListener('click', () => {
+          floatingPrefs.showEssentialCards = true;
+          floatingPrefs.focusSelectedOnly = false;
+          floatingPrefs.showNodeBadges = true;
+          floatingPrefs.showDecorativeScene = true;
+          applyFloatingPreferences();
+          showToast('تم إظهار جميع الطبقات الأساسية والزخرفية ✨');
+        });
+
+        document.getElementById('btn-pure-3d-mode').addEventListener('click', () => {
+          floatingPrefs.showEssentialCards = false;
+          floatingPrefs.showDecorativeScene = false;
+          applyFloatingPreferences();
+          layersPopover.classList.add('hidden');
+          showToast('وضع المشهد ثلاثي الأبعاد الصافي — انقر على أي عقدة ثلاثية الأبعاد للتفاعل 🌌');
         });
 
         document.getElementById('btn-focus-core').addEventListener('click', () => {
@@ -3075,13 +3533,56 @@
           rebuildSceneGraph();
         });
 
-        let panelCollapsed = false;
-        document.getElementById('btn-collapse-panel').addEventListener('click', () => {
-          panelCollapsed = !panelCollapsed;
+        let panelCollapsed = window.innerWidth < 768;
+        function syncInspectorDrawerUI() {
           const body = document.getElementById('inspector-body');
           const icon = document.getElementById('panel-collapse-icon');
-          body.classList.toggle('hidden', panelCollapsed);
-          icon.textContent = panelCollapsed ? '▲' : '▼';
+          if (body) body.classList.toggle('hidden', panelCollapsed);
+          if (icon) icon.textContent = panelCollapsed ? '▲' : '▼';
+        }
+        syncInspectorDrawerUI();
+        function toggleInspectorDrawer() {
+          panelCollapsed = !panelCollapsed;
+          syncInspectorDrawerUI();
+        }
+
+        // Relocated Tools Drawer Open / Close Logic
+        let toolsDrawerOpen = false;
+        const toolsDrawerPanel = document.getElementById('tools-drawer-panel');
+        const toolsDrawerBackdrop = document.getElementById('tools-drawer-backdrop');
+        function setToolsDrawerOpen(open) {
+          toolsDrawerOpen = open;
+          if (toolsDrawerPanel) {
+            toolsDrawerPanel.classList.toggle('translate-y-[130%]', !open);
+            toolsDrawerPanel.classList.toggle('opacity-0', !open);
+            toolsDrawerPanel.classList.toggle('pointer-events-none', !open);
+          }
+          if (toolsDrawerBackdrop) {
+            toolsDrawerBackdrop.classList.toggle('hidden', !open);
+          }
+        }
+        document.getElementById('btn-open-tools-drawer').addEventListener('click', (e) => {
+          e.stopPropagation();
+          setToolsDrawerOpen(!toolsDrawerOpen);
+        });
+        document.getElementById('btn-close-tools-drawer').addEventListener('click', () => {
+          setToolsDrawerOpen(false);
+        });
+        ['btn-focus-core', 'btn-guided-chain', 'btn-toggle-link-mode', 'btn-add-node-top', 'btn-auto-layout', 'btn-reset-scene', 'btn-help-modal'].forEach(btnId => {
+          const el = document.getElementById(btnId);
+          if (el) el.addEventListener('click', () => setToolsDrawerOpen(false));
+        });
+        toolsDrawerBackdrop.addEventListener('click', () => {
+          setToolsDrawerOpen(false);
+        });
+        document.getElementById('btn-quick-eye-bottom').addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.getElementById('btn-toggle-floating').click();
+        });
+
+        document.getElementById('btn-collapse-panel').addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleInspectorDrawer();
         });
 
         document.getElementById('btn-open-lightbox-from-panel').addEventListener('click', () => {
@@ -3110,7 +3611,7 @@
         });
 
         document.getElementById('btn-zoom-in').addEventListener('click', () => {
-          camState.desiredRadius = Math.max(16, camState.desiredRadius - 10);
+          camState.desiredRadius = Math.max(15, camState.desiredRadius - 10);
         });
         document.getElementById('btn-zoom-out').addEventListener('click', () => {
           camState.desiredRadius = Math.min(165, camState.desiredRadius + 10);
@@ -3251,6 +3752,7 @@
             document.getElementById('reset-modal').classList.add('hidden');
             document.getElementById('help-modal').classList.add('hidden');
             document.getElementById('search-dropdown').classList.add('hidden');
+            document.getElementById('floating-layers-popover').classList.add('hidden');
             hideContextMenu();
             setLinkMode(false);
             return;
@@ -3261,6 +3763,9 @@
           if (e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'k')) {
             e.preventDefault();
             document.getElementById('search-input').focus();
+          } else if (e.key.toLowerCase() === 'v') {
+            e.preventDefault();
+            document.getElementById('btn-toggle-floating').click();
           } else if (e.key === 'Backspace') {
             e.preventDefault();
             goBackToPreviousLevel();
@@ -3299,7 +3804,7 @@
         loadStateFromStorage();
         rebuildSceneGraph();
         bindUIEvents();
-        updateCameraFromSpherical(true);
+        updateCameraFromSpherical(true, 1.0);
         selectNode('core', false, false);
         renderPathwayStepper();
         requestAnimationFrame(animate);
